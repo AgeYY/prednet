@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from imageio import imsave
 from scipy.ndimage import gaussian_filter
+from scipy.misc import imresize
 
 
 class Immaker():
@@ -152,6 +153,45 @@ class Batch_gen():
         else:
             img_filt = gaussian_filter(img, sigma=(0, *sig, 0))
             return img_filt
+
+    @staticmethod
+    def process_grey_video(video, imshape=(128, 160)):
+        '''
+        process grey videos so that can be directly fed into the prednet.
+        video (n_video, n_frame, imsize[0], imsize[1])
+        imshape (the required image size of the prednet)
+        output:
+          video_ppd (n_video, n_frame, req_imsize[0], req_imsize[1], 3):
+        '''
+        # step 1: resize the images
+        video_ppd = np.zeros((video.shape[0], video.shape[1], *imshape))
+        for i_seq, seq in enumerate(video):
+            for i_im, im in enumerate(seq):
+                video_ppd[i_seq, i_im] = process_im(im, imshape)
+
+        # step 2: braodcast to three channels
+        video_ppd = video_ppd[..., None]
+        video_ppd = np.repeat(video_ppd, 3, axis=-1)
+        return video_ppd
+
+# resize and crop image
+def process_im(im, desired_sz):
+    '''
+    First step: 
+    '''
+    im_temp = im.copy()
+    if im.shape[0] / im.shape[1] > desired_sz[0] / desired_sz[1]:
+        target_ds = float(desired_sz[1])/im.shape[1]
+        im = imresize(im, (int(np.round(target_ds * im.shape[0])), desired_sz[1]))
+        d = int((im.shape[0] - desired_sz[0]) / 2)
+        im = im[d:d+desired_sz[0], :]
+    else:
+        target_ds = float(desired_sz[0])/im.shape[0]
+        im = imresize(im, (desired_sz[0], int(np.round(target_ds * im.shape[1]))))
+        d = int((im.shape[1] - desired_sz[1]) / 2)
+        im = im[:, d:d+desired_sz[1]]
+
+    return im
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt

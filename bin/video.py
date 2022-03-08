@@ -1,77 +1,60 @@
-# Show the video stimuli used in paper Hénaff et al. (2021) from https://osf.io/gwtcs/
-import scipy.io
-import matplotlib.pyplot as plt
+# verify the video straightening hyperthesis with the prednet
+
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
-#stim_info = scipy.io.loadmat('./data/stim_info.mat')
-#print(stim_info.keys())
-#
-#for key in stim_info:
-#    try:
-#        print(key, stim_info[key].shape)
-#    except:
-#        print(key, stim_info[key])
-#
-#print(stim_info['artificial_movie_contrast'])
-#print(stim_info['artificial_movie_frame'][0, 0])
-#print(stim_info['artificial_movie_labels'])
+from predusion.video_straight_reader import VS_reader
+from predusion.immaker import Batch_gen
+from predusion.agent import Agent
+from predusion.tools import curvature
 
-#plt.figure()
-#for im in stim_info['natural_movie_contrast']:
+from kitti_settings import *
+
+
+vsread = VS_reader()
+
+video = vsread.read_video(video_type='natural', video_cate='01', scale='1x') # [number of images in a seq, imshape[0], imshape[1]]
+
+#### process video so that can be fed into the prednet, which should be [number of sequences, number of images in each sequence, imshape[0], imshape[1], 3 channels]
+imshape = (128, 160)
+
+video = video[None, ...]
+
+video_ppd = Batch_gen.process_grey_video(video, imshape=imshape)
+print(video_ppd.shape)
+
+#for im in video_ppd[0]:
 #    plt.imshow(im)
 #    plt.show()
 
-#plt.figure()
-#for im in stim_info['natural_movie_frame'][0]:
-#    plt.imshow(im)
-#    plt.show()
+##### load the prednet
+json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
+weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
+output_mode = 'E3'
+batch_size = video_ppd.shape[0]
 
-stim_matrix = scipy.io.loadmat('./data/stim_matrix.mat')
-#print(stim_matrix.keys())
-#
-#for key in stim_matrix:
-#    try:
-#        print(key, stim_matrix[key].shape)
-#    except:
-#        print(key, stim_matrix[key])
+sub = Agent()
+sub.read_from_json(json_file, weights_file)
 
-#print(stim_matrix['image_paths'])
-#print(stim_matrix['artificial_movie_labels'])
-#print(stim_matrix['natural_movie_labels'])
-#i_fram='02'
-#for label in stim_matrix['natural_movie_labels'][0]:
-#    if ('natural' in label[0]) and ('01' in label[0]) and ('1x' in label[0]):
-#        print(label)
+output = sub.output(video_ppd, output_mode=output_mode, batch_size=batch_size) # if output is not prediction, the output shape would be (batch_size, number of images in a seq, a 3d tensor represent neural activation)
+output_proc = output.reshape(output.shape[0], output.shape[1], -1) # flatten neural id
 
-#image_path = np.array(stim_matrix['image_paths'])
-#print('01' in image_path) # element compare is not implemented in this numpy version
-#print(image_path.shape)
-#print(type(image_path))
+from sklearn.decomposition import PCA
+pca = PCA(n_components=3)
+output_proc_pca = pca.fit_transform(output_proc[0])
+print(pca.explained_variance_ratio_)
 
-plt.figure()
-for i_scale, im_scale in enumerate(stim_matrix['image_paths']):
+#ct, ct_mean = curvature(output_proc[0])
+ct, ct_mean = curvature(output_proc_pca)
+print(np.mean(ct[2:])) # ignore the first two video frames due to the pool prediction of the prednet
 
-    for i_type, im_type in enumerate(im_scale):
+video_pca = pca.fit_transform(video.reshape(video.shape[1], -1))
+ct_img, ct_mean_img = curvature(video_pca)
+print(np.mean(ct_img[2:])) # ignore the first two video frames due to the pool prediction of the prednet
 
-        for i_cate, im_cate in enumerate(im_type):
-
-            for i_frame, im_frame in enumerate(im_cate):
-                if ('natural01' in im_frame[0]) and ('movie03' in im_frame[0]) and ('zoom1x' in im_frame[0]):
-                    plt.imshow(stim_matrix['stim_matrix'][i_scale, i_type, i_cate, :, :, i_frame])
-                    plt.show()
-
-## export all frames in stim_matrix
-#path = './data/'
-#plt.figure()
-#for i_scale, im_scale in enumerate(stim_matrix['stim_matrix']):
-#    path = os.path.join(path, 'scale' + str(i_scale))
-#
-#    for i_type, im_type in enumerate(im_scale):
-#        path = os.path.join(path, 'type' + str(i_type))
-#
-#        for i_cate, im_cate in enumerate(im_type):
-#            path = os.path.join(path, 'cate' + str(i_cate))
-#
-#            for i_frame, im_frame in enumerate(im_cate):
-#                path = os.path.join(path, 'frame' + str(i_type))
+output_mode = 'prediction'
+output = sub.output(video_ppd, output_mode=output_mode, batch_size=batch_size) # if output is not prediction, the output shape would be (batch_size, number of images in a seq, a 3d tensor represent neural activation)
+from predusion.ploter import Ploter
+fig, gs = Ploter.plot_seq_prediction(video_ppd[0], output[0])
+plt.show()
