@@ -30,6 +30,16 @@ class Agent():
 
         return self.test_prednet
 
+    def output_multiple(self, seq_batch, cha_first=False, is_upscaled=True, output_mode=['prediction'], batch_size=10):
+        '''
+        output multiple modules' neural response
+        '''
+        feature = {}
+        for key in output_mode:
+            feature[key] = self.output(seq_batch, cha_first=cha_first, is_upscaled=is_upscaled, output_mode=key, batch_size=batch_size)
+
+        return feature
+
     def output(self, seq_batch, cha_first=False, is_upscaled=True, output_mode='prediction', batch_size=10):
         '''
         input:

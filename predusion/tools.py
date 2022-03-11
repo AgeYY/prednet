@@ -25,27 +25,25 @@ def tensor_sta(fir_rate, stimuli, n_tao):
     qij = np.array(qij) # [number of tao time point, number of neurons, *image_shape, 3]
     return qij
 
-def curvature(traj):
+def confidence_interval(data, measure=np.mean, n_resamples=None, size=None, ci_bound=[2.5, 97.5]):
     '''
-    calculate the curvature of a trajectory. Refer more detail to the method section of Hénaff et al. (2021) https://doi.org/10.1038/s41593-019-0377-4
-    input:
-      traj ([n_point, n_dim])
-    output:
-      ct ([n_point]): curvature of two adjacent points
-      ct_mean: averaged curvature across all points
+    find the confidence interval of measure(data)
+    data (np.array, [n_data_points])
+    meansure: a function whose input is an array output is a number. measure(data)
     '''
-    vt_diff = np.diff(traj, axis=0)
+    if n_resamples is None:
+        n_resamples = data.shape[0]
+    if size is None:
+        size = data.shape[0]
 
-    norm = np.linalg.norm(vt_diff, axis=1)
+    measure_arr = np.zeros(n_resamples)
 
-    for t in np.arange(vt_diff.shape[0]):
-        vt_diff[t, :] = vt_diff[t, :] / norm[t]
-
-    ct = np.zeros(vt_diff.shape[0] - 1)
-    for t in range(ct.shape[0]):
-        ct[t] = np.arccos(np.dot(vt_diff[t], vt_diff[t + 1]))
-
-    return ct, np.mean(ct)
+    idx_data = np.arange(data.shape[0])
+    for i in range(n_resamples):
+        idx_resample = np.random.choice(idx_data, replace=True, size=size) # the batch size is according to https://stats.stackexchange.com/questions/246726/size-of-bootstrap-samples
+        measure_arr[i] = measure(data[idx_resample])
+    ci_l, ci_u = np.percentile(measure_arr, ci_bound)
+    return ci_l, ci_u
 
 if __name__  == '__main__':
     import matplotlib.pyplot as plt

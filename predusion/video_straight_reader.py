@@ -60,12 +60,14 @@ class VS_reader():
         '''
         real all category of videos
         '''
-        cate_list = ['0' + str(i) for i in range(1, 11)]
+        cate_list = ['0' + str(i) for i in range(1, 10)]
+        cate_list.append('10')
 
         video = []
-        for cate in cate_list:
-            a_video = self.read_video(self, video_type, video_cate, scale)
-            video.append(a_video)
+        for video_cate in cate_list:
+            a_video = self.read_video(video_type, video_cate, scale)
+            if not (a_video is None):
+                video.append(a_video.copy())
 
         return np.array(video)
 
