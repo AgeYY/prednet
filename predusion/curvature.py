@@ -3,7 +3,7 @@ import numpy as np
 class Curvature():
     def __init__(self, data=None):
         '''
-        data ([n_video_frames, n_neurons]): feature map to a video
+        data ([n_video, n_video_frames, n_neurons]): feature map to a video
         '''
         self.data = data
 
@@ -13,7 +13,6 @@ class Curvature():
     def curvature_frame(self, n_component=None):
         '''
         calculate the curvatures of the data
-        ct ([n_video, n_frames])
         '''
         ct = []
         for i, video in enumerate(self.data):

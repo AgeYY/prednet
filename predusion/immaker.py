@@ -163,6 +163,7 @@ class Batch_gen():
         output:
           video_ppd (n_video, n_frame, req_imsize[0], req_imsize[1], 3):
         '''
+        assert len(video.shape) == 4, 'The shape of video should be (n_video, n_frame, imsize[0], imsize[1])'
         # step 1: resize the images
         video_ppd = np.zeros((video.shape[0], video.shape[1], *imshape))
         for i_seq, seq in enumerate(video):
