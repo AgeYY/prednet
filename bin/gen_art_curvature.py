@@ -66,9 +66,11 @@ class Artf_video():
         cos_theta = np.cos(theta_mat)
         cos_dot = 0
         for i in range(theta_mat.shape[0]-1):
-            cos_dot += np.dot( cos_theta[i], cos_theta[i + 1] )
-        cos_dot = cos_dot / (theta_mat.shape[0]-2)
-        loss1 = (cos_dot - np.cos(tg_curvature))**2
+            #cos_dot += np.dot( cos_theta[i], cos_theta[i + 1] )
+            cos_dot += (np.dot( cos_theta[i], cos_theta[i + 1] ) - np.cos(tg_curvature))**2
+        #cos_dot = cos_dot / (theta_mat.shape[0]-2)
+        #loss1 = (cos_dot - np.cos(tg_curvature))**2
+        loss1 = cos_dot / (theta_mat.shape[0]-2)
 
         loss2 = 0
         for i in range(theta_mat.shape[0]):
