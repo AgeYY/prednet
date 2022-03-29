@@ -2,6 +2,7 @@
 import scipy.io
 import os
 import numpy as np
+from predusion.immaker import process_im
 
 class VS_reader():
     '''
@@ -55,6 +56,23 @@ class VS_reader():
                 video.append(im)
 
         return np.array(video)
+
+    def read_video_ppd(self, video_type='natural', video_cate='01', scale='1x', imshape=(128, 160)):
+        '''
+        read and process the video (resize the image to the target imshape)
+        output:
+        video_ppd ([n_frames, 512, 512])
+        '''
+        video = self.read_video(video_type=video_type, video_cate=video_cate, scale=scale)
+        video = video.reshape((1, *video.shape))
+
+        assert len(video.shape) == 4, 'The shape of video should be (n_video, n_frame, imsize[0], imsize[1])'
+        video_ppd = np.zeros((video.shape[0], video.shape[1], *imshape))
+        for i_seq, seq in enumerate(video):
+            for i_im, im in enumerate(seq):
+                video_ppd[i_seq, i_im] = process_im(im, imshape)
+
+        return video_ppd[0]
 
     def read_video_all(self, video_type='natural', scale='1x'):
         '''
