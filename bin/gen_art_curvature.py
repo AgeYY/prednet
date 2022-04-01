@@ -122,9 +122,10 @@ class Artf_video():
 
 imshape = (128, 160)
 video_type = 'natural'
-video_cate = '05'
+video_cate = '07'
 scale = '1x'
 n_component_video = 5 # the curvature is calculated after dimension reduction to n_component_video
+tg_curv_mannual = 0.5
 
 ########## Load the natural video and find the target curvature
 vsread = VS_reader()
@@ -134,7 +135,10 @@ nat_video_flat = nat_video.reshape(1, nat_video.shape[0], -1) # ([n_video, n_vid
 n_frame = nat_video.shape[0]
 cv = Curvature()
 cv.load_data(nat_video_flat)
-tg_curvature = cv.curvature_traj(n_component=n_component_video)
+if tg_curv_mannual is None:
+    tg_curvature = cv.curvature_traj(n_component=n_component_video)
+else:
+    tg_curvature = tg_curv_mannual
 
 ########## Load the artificial video as an initialization
 art_video_type = 'synthetic'
@@ -152,89 +156,89 @@ print(artf_curv)
 print(tg_curvature)
 print(result.fun)
 
-########## Show the video
-#for im in video:
-#    plt.imshow(im)
-#    plt.show()
+######### Show the video
+for im in video:
+    plt.imshow(im)
+    plt.show()
 
-##### load the prednet
-json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
-weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
-n_component = 5
-
-video_ppd = Batch_gen.process_grey_video(artf_video[None, ...], imshape=imshape) # process the video
-
-batch_size = video_ppd.shape[0]
-
-sub = Agent()
-sub.read_from_json(json_file, weights_file)
-
-
-output = sub.output_multiple(video_ppd, output_mode=output_mode, batch_size=batch_size) # if output is not prediction, the output shape would be (batch_size, number of images in a seq, a 3d tensor represent neural activation)
-
-########## curverature origin
-cv = Curvature()
-
-ct_mean = {}
-ct_mean_pca = {}
-
-for key in output:
-    output[key] = output[key].reshape(output[key].shape[0], output[key].shape[1], -1) # flatten (n_video, n_frames, n_neurons)
-    cv.load_data(output[key])
-
-    ct_mean[key] = cv.curvature_traj(cutoff=cutoff, n_component=None) # ignore the first two video frames due to the pool prediction of the prednet
-    ct_mean_pca[key] = cv.curvature_traj(cutoff=cutoff, n_component=n_component) # ignore the first two video frames due to the pool prediction of the prednet
-
-video_flat = video.reshape((video.shape[0], video.shape[1], -1))
-cv.load_data(video_flat)
-ct_mean_video = cv.curvature_traj(cutoff=cutoff)
-
-ct_mean_video_pca = cv.curvature_traj(cutoff=cutoff, n_component=n_component)
-
-########## Change of curvature
-ct_mean_change = {}
-ct_mean_change_pca = {}
-
-ct_mean_change_median = {}
-ct_mean_change_pca_median = {}
-
-ct_mean_change_ci = {}
-ct_mean_change_pca_ci = {}
-
-for key in ct_mean:
-    ct_mean_change[key] = ct_mean[key] - ct_mean_video
-    ct_mean_change_median[key] = np.median(ct_mean_change[key])
-    ct_mean_change_ci[key] = np.array( confidence_interval(ct_mean_change[key], ci_bound=ci_bound, measure=np.median, n_resamples=ci_resample) )
-
-    ct_mean_change_pca[key] = ct_mean_pca[key] - ct_mean_video_pca
-    ct_mean_change_pca_median[key] = np.median(ct_mean_change_pca[key])
-    ct_mean_change_pca_ci[key] = np.array( confidence_interval(ct_mean_change_pca[key], ci_bound=ci_bound, measure=np.median, n_resamples=ci_resample) )
-
-########## plot out the median
-def plot_curv_layer(ct_mean_change_median, ct_mean_change_ci):
-    for key in ct_mean_change_median:
-        x, y = [int(key[1])], [ct_mean_change_median[key]]
-        yerr = (ct_mean_change_ci[key] - y)[..., None]
-        yerr = np.abs(yerr)
-        if 'E' in key:
-            plt.scatter(x, y, c='green')
-            plt.errorbar(x, y, yerr=yerr, c='green')
-        if 'R' in key:
-            plt.scatter(x, y, c='red')
-            plt.errorbar(x, y, yerr=yerr, c='red')
-
-plt.figure()
-plot_curv_layer(ct_mean_change_median, ct_mean_change_ci)
-plt.axhline(y = 0, linestyle = '--', linewidth = 1, color = 'black')
-plt.legend()
-plt.xlabel('Module ID')
-plt.ylabel('Change of curvature \n (curvature of neurons - curvature of videos)')
-plt.show()
-
-plt.figure()
-plot_curv_layer(ct_mean_change_pca_median, ct_mean_change_pca_ci)
-plt.axhline(y = 0, linestyle = '--', linewidth = 1, color = 'black')
-plt.legend()
-plt.xlabel('Module ID')
-plt.ylabel('Change of curvature \n (curvature of neurons - curvature of videos)')
-plt.show()
+###### load the prednet
+#json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
+#weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
+#n_component = 5
+#
+#video_ppd = Batch_gen.process_grey_video(artf_video[None, ...], imshape=imshape) # process the video
+#
+#batch_size = video_ppd.shape[0]
+#
+#sub = Agent()
+#sub.read_from_json(json_file, weights_file)
+#
+#
+#output = sub.output_multiple(video_ppd, output_mode=output_mode, batch_size=batch_size) # if output is not prediction, the output shape would be (batch_size, number of images in a seq, a 3d tensor represent neural activation)
+#
+########### curverature origin
+#cv = Curvature()
+#
+#ct_mean = {}
+#ct_mean_pca = {}
+#
+#for key in output:
+#    output[key] = output[key].reshape(output[key].shape[0], output[key].shape[1], -1) # flatten (n_video, n_frames, n_neurons)
+#    cv.load_data(output[key])
+#
+#    ct_mean[key] = cv.curvature_traj(cutoff=cutoff, n_component=None) # ignore the first two video frames due to the pool prediction of the prednet
+#    ct_mean_pca[key] = cv.curvature_traj(cutoff=cutoff, n_component=n_component) # ignore the first two video frames due to the pool prediction of the prednet
+#
+#video_flat = video.reshape((video.shape[0], video.shape[1], -1))
+#cv.load_data(video_flat)
+#ct_mean_video = cv.curvature_traj(cutoff=cutoff)
+#
+#ct_mean_video_pca = cv.curvature_traj(cutoff=cutoff, n_component=n_component)
+#
+########### Change of curvature
+#ct_mean_change = {}
+#ct_mean_change_pca = {}
+#
+#ct_mean_change_median = {}
+#ct_mean_change_pca_median = {}
+#
+#ct_mean_change_ci = {}
+#ct_mean_change_pca_ci = {}
+#
+#for key in ct_mean:
+#    ct_mean_change[key] = ct_mean[key] - ct_mean_video
+#    ct_mean_change_median[key] = np.median(ct_mean_change[key])
+#    ct_mean_change_ci[key] = np.array( confidence_interval(ct_mean_change[key], ci_bound=ci_bound, measure=np.median, n_resamples=ci_resample) )
+#
+#    ct_mean_change_pca[key] = ct_mean_pca[key] - ct_mean_video_pca
+#    ct_mean_change_pca_median[key] = np.median(ct_mean_change_pca[key])
+#    ct_mean_change_pca_ci[key] = np.array( confidence_interval(ct_mean_change_pca[key], ci_bound=ci_bound, measure=np.median, n_resamples=ci_resample) )
+#
+########### plot out the median
+#def plot_curv_layer(ct_mean_change_median, ct_mean_change_ci):
+#    for key in ct_mean_change_median:
+#        x, y = [int(key[1])], [ct_mean_change_median[key]]
+#        yerr = (ct_mean_change_ci[key] - y)[..., None]
+#        yerr = np.abs(yerr)
+#        if 'E' in key:
+#            plt.scatter(x, y, c='green')
+#            plt.errorbar(x, y, yerr=yerr, c='green')
+#        if 'R' in key:
+#            plt.scatter(x, y, c='red')
+#            plt.errorbar(x, y, yerr=yerr, c='red')
+#
+#plt.figure()
+#plot_curv_layer(ct_mean_change_median, ct_mean_change_ci)
+#plt.axhline(y = 0, linestyle = '--', linewidth = 1, color = 'black')
+#plt.legend()
+#plt.xlabel('Module ID')
+#plt.ylabel('Change of curvature \n (curvature of neurons - curvature of videos)')
+#plt.show()
+#
+#plt.figure()
+#plot_curv_layer(ct_mean_change_pca_median, ct_mean_change_pca_ci)
+#plt.axhline(y = 0, linestyle = '--', linewidth = 1, color = 'black')
+#plt.legend()
+#plt.xlabel('Module ID')
+#plt.ylabel('Change of curvature \n (curvature of neurons - curvature of videos)')
+#plt.show()
