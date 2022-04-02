@@ -104,13 +104,6 @@ class Artf_video():
         # reconstruct the reduced video
         art_video = self.recons_video(tildew_mat)
 
-        ## plot the natual video after inverse pca
-        #art_video = self.pca.transform(self.nat_video.reshape(self.n_frame, -1))
-        #video = np.zeros(( self.n_frame, *self.imshape ))
-        #for i, frame in enumerate(art_video):
-        #    video[i] = self.pca.inverse_transform( frame ).reshape(self.imshape)
-        #art_video = video
-        # convert the dimension
         return art_video, result
 
     def recons_video(self, tildew_mat):
@@ -143,6 +136,7 @@ video_cate = '07'
 scale = '1x'
 n_component_video = 5 # the curvature is calculated after dimension reduction to n_component_video
 tg_curv_mannual = 0.961
+fix_end=False
 
 ########## Load the natural video and find the target curvature
 vsread = VS_reader()
@@ -159,7 +153,7 @@ else:
     tg_curvature = tg_curv_mannual
 
 ########## Compute the loss function
-artf_gen = Artf_video(n_component=5, alpha=0.1)
+artf_gen = Artf_video(n_component=5, alpha=0.1, fix_end=fix_end)
 artf_gen.load_natural_video(nat_video)
 
 artf_video, result = artf_gen.minimize(tg_curvature)
