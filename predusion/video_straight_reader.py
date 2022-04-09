@@ -77,6 +77,8 @@ class VS_reader():
     def read_video_all(self, video_type='natural', scale='1x'):
         '''
         real all category of videos
+        output:
+          video (array, [n_video, n_frames, 512, 512] )
         '''
         cate_list = ['0' + str(i) for i in range(1, 10)]
         cate_list.append('10')
@@ -89,6 +91,20 @@ class VS_reader():
 
         return np.array(video)
 
+    def read_video_all_ppd(self, video_type='natural', scale='1x', imshape=(128, 160)):
+        '''
+        read and process the video (resize the image to the target imshape)
+        output:
+          video (array, [n_video, n_frames, *imshape] )
+        '''
+        video = self.read_video_all(video_type=video_type, scale=scale)
+
+        video_ppd = np.zeros((video.shape[0], video.shape[1], *imshape))
+        for i_seq, seq in enumerate(video):
+            for i_im, im in enumerate(seq):
+                video_ppd[i_seq, i_im] = process_im(im, imshape)
+
+        return video_ppd
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
