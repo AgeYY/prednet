@@ -26,7 +26,7 @@ output_mode = ['E0', 'E1', 'E2', 'E3', 'R0', 'R1', 'R2', 'R3']
 
 ########## Load the video
 vsread = VS_reader()
-video = vsread.read_video_all(video_type=video_type, scale=scale) # [number of images in a seq, imshape[0], imshape[1]]
+video = vsread.read_video_all_ppd(video_type=video_type, scale=scale) # [number of images in a seq, imshape[0], imshape[1]]
 
 video_ppd = Batch_gen.process_grey_video(video, imshape=imshape) # process the video
 
@@ -37,7 +37,6 @@ sub = Agent()
 sub.read_from_json(json_file, weights_file)
 
 output = sub.output_multiple(video_ppd, output_mode=output_mode, batch_size=batch_size) # if output is not prediction, the output shape would be (batch_size, number of images in a seq, a 3d tensor represent neural activation)
-
 
 ########## curverature origin
 cv = Curvature()
@@ -52,11 +51,12 @@ for key in output:
     ct_mean[key] = cv.curvature_traj(cutoff=cutoff, n_component=None) # ignore the first two video frames due to the pool prediction of the prednet
     ct_mean_pca[key] = cv.curvature_traj(cutoff=cutoff, n_component=n_component) # ignore the first two video frames due to the pool prediction of the prednet
 
-video_flat = video.reshape((video.shape[0], video.shape[1], -1))
+video_flat = video_ppd.reshape((video_ppd.shape[0], video_ppd.shape[1], -1))
 cv.load_data(video_flat)
 ct_mean_video = cv.curvature_traj(cutoff=cutoff)
 
 ct_mean_video_pca = cv.curvature_traj(cutoff=cutoff, n_component=n_component)
+print(ct_mean_video, ct_mean_video_pca)
 
 ########## Change of curvature
 ct_mean_change = {}

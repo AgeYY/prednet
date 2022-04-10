@@ -66,7 +66,7 @@ class Agent():
             seq_hat = test_model.predict(seq_tran, batch_size=batch_size)
             seq_hat = np.transpose(seq_hat, (0, 1, 3, 4, 2)) # convert to original shape
 
-        if is_upscaled:
+        if (is_upscaled) and (output_mode == 'prediction'):
             seq_hat = seq_hat * 255
 
         return seq_hat
