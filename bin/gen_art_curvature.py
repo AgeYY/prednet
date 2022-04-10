@@ -1,6 +1,4 @@
 # generate a artificial video based one natural video with predefined curvature
-from scipy.optimize import minimize as sci_minimize
-from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -12,7 +10,6 @@ from predusion.agent import Agent
 from predusion.gen_art_video import Artf_video
 from predusion.gen_art_video import gen_artf_video_from_vs_reader
 from predusion.tools import confidence_interval
-
 
 from kitti_settings import *
 
@@ -31,7 +28,7 @@ output_mode = ['E0', 'E1', 'E2', 'E3', 'R0', 'R1', 'R2', 'R3']
 artf_mode = 'fix_norm'
 
 # generate artificial videos
-artf_video_batch = gen_artf_video_from_vs_reader(n_video=n_video, mode=artf_mode) # [n_video, n_frame, *imshape]
+artf_video_batch = gen_artf_video_from_vs_reader(n_video=n_video, mode=artf_mode, n_component_video=n_component) # [n_video, n_frame, *imshape]
 video_ppd = Batch_gen.process_grey_video(artf_video_batch, imshape=imshape) # process the video. [n_video, n_frame, *imshape, 3]
 
 ##### natural video
@@ -46,7 +43,6 @@ video_ppd = Batch_gen.process_grey_video(artf_video_batch, imshape=imshape) # pr
 
 #for i, frame in enumerate(video[6]):
 #    imageio.imwrite('../figs' + artf_mode + 'frame' + str(i) + '.jpeg', frame)
-
 
 sub = Agent()
 sub.read_from_json(json_file, weights_file)

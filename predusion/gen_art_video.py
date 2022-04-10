@@ -35,6 +35,8 @@ class Artf_video():
         '''
         input:
           nat_video ([n_frame, imshape[0], imshape[1]])
+          or
+          nat_video ([n_frame, imshape[0], imshape[1], color_chs])
         stored data:
           self.norm_pca (array, float, [n_frame - 1]): norm of x_(i+1)_pca - x_i_pca
           self.nat_video: original video
@@ -173,7 +175,8 @@ class Artf_video():
             else:
                 video_pca[i + 1] = video_pca[i] + self.vec_norm_pca[i] * tildew_mat[i] / np.linalg.norm(tildew_mat[i]) # the shape is 
         # convert theta to the artificial video
-        video = np.zeros(( self.n_frame, self.imshape[0] * self.imshape[1]))
+        n_pixel = np.prod(self.imshape)
+        video = np.zeros(( self.n_frame, n_pixel))
         for i, frame in enumerate(video_pca):
             video[i] = self.pca.inverse_transform( frame )
         return video
@@ -181,6 +184,47 @@ class Artf_video():
 from kitti_settings import *
 from predusion.video_straight_reader import VS_reader
 from predusion.curvature import Curvature
+
+def gen_artf_video_from_nat_video(nat_video_all, n_component_video=5, n_video=10, verbose=False, mode='fix_end', threshold=True):
+    ''''
+    generate artificial videos from natural videos
+    nat_video (n_video, n_frame, *origin_imshape, n color channels)
+    the rest of parameters see gen_artf_video_from_vs_reader
+    output:
+      artf_video_batch (n_video, n_frame, *origin_imshape)
+    '''
+    nat_video_flat_all = nat_video_all.reshape(nat_video_all.shape[0], nat_video_all.shape[1], -1) # ([n_video, n_video_frames, n_neurons])
+    n_frame = nat_video_all.shape[1]
+    
+    artf_video_batch = [] # storing all artificial videos
+    
+    artf_gen = Artf_video(n_component=n_component_video, alpha=0.1)
+
+    for i, nat_video_flat_i in enumerate(nat_video_flat_all):
+        if not (i < n_video): break # stop when video are enough
+
+        nat_video_flat = nat_video_flat_i[None, ...]
+        nat_video = nat_video_all[i]
+        
+        cv = Curvature()
+        cv.load_data(nat_video_flat)
+        tg_curvature = cv.curvature_traj(n_component=n_component_video)
+            
+        ########## Compute the loss function
+        artf_gen.load_natural_video(nat_video)
+        
+        artf_video, result = artf_gen.generate(tg_curvature, mode=mode, threshold=threshold)
+
+        artf_video_batch.append(artf_video)
+
+        if verbose:
+            cv.load_data(artf_video.reshape((1, nat_video.shape[0], -1)))
+            artf_curv = cv.curvature_traj(n_component=n_component_video)
+
+            print('curvature of natural video: {}'.format(tg_curvature))
+            print('curvature of your artificial video: {}'.format(artf_curv))
+
+    return np.array(artf_video_batch)
 
 def gen_artf_video_from_vs_reader(imshape=(128, 160), n_component_video=5, n_video=10, verbose=False, mode='fix_end'):
     '''
@@ -204,7 +248,7 @@ def gen_artf_video_from_vs_reader(imshape=(128, 160), n_component_video=5, n_vid
     
     artf_video_batch = [] # storing all artificial videos
     
-    artf_gen = Artf_video(n_component=5, alpha=0.1)
+    artf_gen = Artf_video(n_component=n_component_video, alpha=0.1)
 
     for i, nat_video_flat_i in enumerate(nat_video_flat_all):
         if not (i < n_video): break # stop when video are enough
