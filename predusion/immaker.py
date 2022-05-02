@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from imageio import imsave
 from scipy.ndimage import gaussian_filter
 from scipy.misc import imresize
+from PIL import Image, ImageDraw
+import os
 
 
 class Immaker():
@@ -194,6 +196,33 @@ def process_im(im, desired_sz):
 
     return im
 
+class Moving_square(): # generate a moving square along the x direction
+    def __init__(self, width = 200, color_bag=(0, 0, 0)):
+        self.images = []
+        self.color_bag = color_bag # background of the images
+        self.width = width # image width
+
+    def create_video(self, init_pos = [0, 0], speed=2, step=20, color_rect=(255, 255, 255)):
+        self.init_pos = init_pos
+        self.size_rect = 20
+        self.color_1 = (255, 255, 255)
+        self.speed = int(speed) # unit: pixels per frame
+        self.step = step # number of time steps
+
+        for i in range(step):
+            im = Image.new('RGB', (self.width, self.width))
+            draw = ImageDraw.Draw(im)
+            curr_pos = (self.init_pos[0] + self.speed * i, self.init_pos[1]) # moving along the x direction
+            rect_para = (curr_pos[0] - self.size_rect // 2, curr_pos[1] - self.size_rect // 2, curr_pos[0] + self.size_rect // 2, curr_pos[1] + self.size_rect // 2) # initial position
+            draw.rectangle(rect_para, fill=color_rect)
+            self.images.append(im)
+    def save_image(self, save_dir_head='./kitti_data/raw/', save_dir_label='moving_bar/'):
+        save_dir = save_dir_head + save_dir_label
+        if not os.path.exists(save_dir): os.mkdir(save_dir) # if doesn't exist, create the dir
+        [self.images[i].save(save_dir + 'im_' + str(i) + '.jpg') for i in range(len(self.images))]
+
+    def clear_image(self):
+        self.images=[]
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
