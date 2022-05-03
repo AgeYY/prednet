@@ -18,6 +18,7 @@ class SequenceGenerator(Iterator):
         self.sequence_start_mode = sequence_start_mode
         assert output_mode in {'error', 'prediction'}, 'output_mode must be in {error, prediction}'
         self.output_mode = output_mode
+        self.source_name = []
 
         if self.data_format == 'channels_first':
             self.X = np.transpose(self.X, (0, 3, 1, 2))
@@ -30,6 +31,7 @@ class SequenceGenerator(Iterator):
             possible_starts = []
             while curr_location < self.X.shape[0] - self.nt + 1:
                 if self.sources[curr_location] == self.sources[curr_location + self.nt - 1]:
+                    self.source_name.append(self.sources[curr_location]) # the source_name correspond to this location
                     possible_starts.append(curr_location)
                     curr_location += self.nt
                 else:
@@ -65,6 +67,7 @@ class SequenceGenerator(Iterator):
 
     def create_all(self):
         X_all = np.zeros((self.N_sequences, self.nt) + self.im_shape, np.float32)
+        print(self.source_name)
         for i, idx in enumerate(self.possible_starts):
             X_all[i] = self.preprocess(self.X[idx:idx+self.nt])
         return X_all

@@ -22,10 +22,12 @@ val_recordings = []
 #categories = ['group_dis', 'group_conti']
 #categories = ['vh', 'square']
 #categories = ['baby_orange', 'after_image'] # please use nt = 9
-categories = ['flash_lag'] # please use nt = 9
+#categories = ['flash_lag'] # please use nt = 9
 #categories = ['rec_contour'] # please use nt = 9
+categories = ['moving_bar'] # please use nt = 9
 
-test_recordings = [(c, 'id0') for c in categories]
+#test_recordings = [(c, 'id0') for c in categories]
+test_recordings=[]
 
 #categories = ['hermann_diff_size']
 #test_recordings = [(c, 'id' + str(idi)) for c in categories for idi in range(9)]
@@ -36,7 +38,6 @@ def my_process_data():
     '''
     this is same as process_data but I chanaged the fold to test if I can use my own images
     '''
-
     splits = {s: [] for s in ['train', 'test', 'val']} # splits = {'train': [], 'test': [], 'val': []}
     splits['val'] = val_recordings
     splits['test'] = test_recordings
