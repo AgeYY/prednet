@@ -218,7 +218,7 @@ class Moving_square(): # generate a moving square along the x direction
             self.images.append(im)
     def save_image(self, save_dir_head='./kitti_data/raw/', save_dir_label='moving_bar/'):
         save_dir = save_dir_head + save_dir_label
-        if not os.path.exists(save_dir): os.mkdir(save_dir) # if doesn't exist, create the dir
+        if not os.path.exists(save_dir): os.makedirs(save_dir) # if doesn't exist, create the dir
         [self.images[i].save(save_dir + 'im_' + '{0:03}'.format(i) + '.jpg') for i in range(len(self.images))]
 
     def clear_image(self):
