@@ -47,10 +47,10 @@ class SequenceGenerator(Iterator):
             self.possible_label = possible_label
 
         if shuffle:
-            idx = np.arange(len(self.possible_starts))
-            idx_permut = np.random.permutation(idx)
-            self.possible_starts = self.possible_starts[idx_permut]
-            self.possible_label = self.possible_label[idx_permut]
+            idx = range(len(self.possible_starts))
+            idx_permut = np.random.permutation(idx).astype(int)
+            self.possible_starts = [self.possible_starts[i] for i in idx_permut]
+            self.possible_label = [self.possible_label[i] for i in idx_permut]
         if N_seq is not None and len(self.possible_starts) > N_seq:  # select a subset of sequences if want to
             self.possible_starts = self.possible_starts[:N_seq]
             self.possible_label = self.possible_label[:N_seq]

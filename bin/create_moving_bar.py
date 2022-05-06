@@ -43,14 +43,14 @@ output_mode = ['E0', 'E1', 'E2', 'E3']
 #output_mode = ['R0', 'R1', 'R2', 'R3']
 
 ##
-train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction')
+train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction', shuffle=True)
 
 X_train, label = train_generator.create_all(out_label=True)
 print(X_train.shape)
 print(label)
 
 ###### check the video
-one_video = X_train[-2]
+one_video = X_train[-1]
 for im in one_video:
     plt.imshow(im)
     plt.show()
