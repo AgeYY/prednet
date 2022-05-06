@@ -8,6 +8,7 @@ from scipy.ndimage import gaussian_filter
 from scipy.misc import imresize
 from PIL import Image, ImageDraw
 import os
+import hickle as hkl
 
 
 class Immaker():
@@ -223,6 +224,20 @@ class Moving_square(): # generate a moving square along the x direction
 
     def clear_image(self):
         self.images=[]
+
+    def create_video_batch(self, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_'):
+        '''
+        save images and labels
+        '''
+        for sp in speed:
+            self.create_video(init_pos=init_pos, speed=sp, step=step)
+            save_dir_label =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
+            self.save_image(save_dir_label)
+            self.clear_image()
+        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
+        hkl.dump(label, save_dir_head + category + '/label.json')
+
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
