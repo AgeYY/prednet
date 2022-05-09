@@ -8,6 +8,7 @@ from scipy.ndimage import gaussian_filter
 from scipy.misc import imresize
 from PIL import Image, ImageDraw
 import os
+import hickle as hkl
 
 
 class Immaker():
@@ -216,13 +217,26 @@ class Moving_square(): # generate a moving square along the x direction
             rect_para = (curr_pos[0] - self.size_rect // 2, curr_pos[1] - self.size_rect // 2, curr_pos[0] + self.size_rect // 2, curr_pos[1] + self.size_rect // 2) # initial position
             draw.rectangle(rect_para, fill=color_rect)
             self.images.append(im)
-    def save_image(self, save_dir_head='./kitti_data/raw/', save_dir_label='moving_bar/'):
-        save_dir = save_dir_head + save_dir_label
+    def save_image(self, save_dir='./kitti_data/raw/moving_bars'):
         if not os.path.exists(save_dir): os.makedirs(save_dir) # if doesn't exist, create the dir
         [self.images[i].save(save_dir + 'im_' + '{0:03}'.format(i) + '.jpg') for i in range(len(self.images))]
 
     def clear_image(self):
         self.images=[]
+
+    def create_video_batch(self, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_'):
+        '''
+        save images and labels
+        '''
+        for sp in speed:
+            self.create_video(init_pos=init_pos, speed=sp, step=step)
+            save_dir_label =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
+            self.save_image(save_dir_label)
+            self.clear_image()
+        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
+        hkl.dump(label, save_dir_head + category + '/label.json')
+
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt

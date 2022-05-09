@@ -1,5 +1,5 @@
-from predusion.immaker import Moving_square
-
+#from predusion.immaker import Moving_square
+#
 #width = 200
 #step = 12
 #speed_list = range(1, 13) # step = 12, speed_list_max = 12 make sure the squre doesn't fall out of the image
@@ -7,14 +7,14 @@ from predusion.immaker import Moving_square
 #
 ## create raw video
 #ms = Moving_square(width=width)
-#for sp in speed_list:
-#    ms.create_video(init_pos=init_pos, speed=sp, step=step)
-#    ms.save_image(save_dir_label='moving_bar/sp_' + str(sp) + '/')
-#    ms.clear_image()
-
-## process into data
-## ...
 #
+#ms.create_video_batch(init_pos=init_pos, speed=speed_list, step=step)
+#
+#from predusion import im_processor as impor
+#categories = ['moving_bar']
+#out_data_head = 'moving_bar'
+#impor.process_data(categories, out_data_head=out_data_head)
+
 # Run the data to the prednet
 import os
 import numpy as np
@@ -32,24 +32,29 @@ from kitti_settings import *
 nt = 12 # each prediction group contains nt images
 batch_size = 10
 
+out_data_head = 'moving_bar'
+
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
 json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
-train_file = os.path.join(DATA_DIR, 'my_X_train.hkl')
-train_sources = os.path.join(DATA_DIR, 'my_sources_train.hkl')
+train_file = os.path.join(DATA_DIR, out_data_head + '_X_train.hkl')
+train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
+label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 output_mode = ['E0', 'E1', 'E2', 'E3']
 #output_mode = ['R0', 'R1', 'R2', 'R3']
-cutoff=2 # the curvature of a trajectory is the mean from curvature from the cutoff frame to the end. Due to the cutoff, the curvature of artificial video is no longer the same as natural video, but the affect should be minor
-#
-train_generator = SequenceGenerator(train_file, train_sources, nt, sequence_start_mode='unique', output_mode='prediction')
 
-X_train = train_generator.create_all()
 ##
-#### check the video
-###one_video = X_train[-2]
-###for im in one_video:
-###    plt.imshow(im)
-###    plt.show()
-##
+train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction', shuffle=True)
+
+X_train, label = train_generator.create_all(out_label=True)
+print(X_train.shape)
+print(label)
+
+###### check the video
+one_video = X_train[-1]
+for im in one_video:
+    plt.imshow(im)
+    plt.show()
+
 #sub = Agent()
 #sub.read_from_json(json_file, weights_file)
 #
@@ -72,7 +77,6 @@ for mode in output_mode:
     neural_x = neural_x_all[mode][:cut, :cut].reshape([cut, cut, -1]) # (n_speed, n_time, features)
     #pca = PCA(n_components=n_com)
     #neural_x = pca.fit_transform(neural_x.reshape([cut*cut, -1])).reshape([cut, cut, -1])
-
 
     speed_list = np.array([1, 10, 11, 12, 2, 3, 4, 5, 6, 7, 8, 9])[:cut]
 
