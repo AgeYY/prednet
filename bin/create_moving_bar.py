@@ -67,20 +67,6 @@ n_com = None
 neural_x_all = hkl.load(os.path.join(DATA_DIR, 'neural_X_error' + '.hkl'))
 
 mean_dot, sem_dot = [], []
-#speed_list = np.array([0, 1, 10, 11, 2, 3, 4, 5, 6, 7, 8, 9])
-#
-#from sklearn.manifold import MDS
-#def dimension_reduction(data, method='mds'):
-#    '''
-#    data ([sample, feature])
-#    '''
-#    embedding = MDS(n_components=2)
-#
-#    data_transformed = embedding.fit_transform(data)
-#
-#    plt.figure()
-#    plt.scatter(data_transformed[:, 0], data_transformed[:, 1])
-#    plt.show()
 
 for mode in output_mode:
     neural_x = neural_x_all[mode][:cut, :cut].reshape([cut, cut, -1]) # (n_speed, n_time, features)

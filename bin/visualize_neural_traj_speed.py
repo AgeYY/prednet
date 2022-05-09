@@ -26,7 +26,6 @@ def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2,
     elif method=='pca':
         embedding = PCA(n_components=n_components)
 
-    print(data.reshape([-1, data.shape[-1]]).shape)
     data_transformed = embedding.fit_transform(data.reshape([-1, data.shape[-1]]))
 
     fig = plt.figure()
@@ -49,15 +48,15 @@ train_file = os.path.join(DATA_DIR, 'my_X_train.hkl')
 train_sources = os.path.join(DATA_DIR, 'my_sources_train.hkl')
 output_mode = ['E0', 'E1', 'E2', 'E3']
 #output_mode = ['R0', 'R1', 'R2', 'R3']
-cut0_time=0 # the curvature of a trajectory is the mean from curvature from the cutoff frame to the end. Due to the cutoff, the curvature of artificial video is no longer the same as natural video, but the affect should be minor
+cut0_time=9 # the curvature of a trajectory is the mean from curvature from the cutoff frame to the end. Due to the cutoff, the curvature of artificial video is no longer the same as natural video, but the affect should be minor
 cut = 12
-embed_method = 'isomap'
+embed_method = 'pca'
 n_components = 3
 speed_list = np.array([1, 10, 11, 12, 2, 3, 4, 5, 6, 7, 8, 9])[:cut]
 
 colorinfo_time = np.arange(cut0_time, cut) # temperal color scheme
 colorinfo_time = np.tile(colorinfo_time, (cut, 1)).flatten()
-colorinfo_speed = np.tile(speed_list, (cut - cut0_time, 1)).T.flatten()
+colorinfo_speed = np.tile(np.arange(1, 13), (cut - cut0_time, 1)).T.flatten()
 
 train_generator = SequenceGenerator(train_file, train_sources, nt, sequence_start_mode='unique', output_mode='prediction')
 
@@ -65,7 +64,6 @@ X_train = train_generator.create_all()
 
 neural_x = X_train[:cut, cut0_time:cut].reshape([cut, cut - cut0_time, -1])
 
-print(colorinfo_time)
 # rearange the neural speed
 ind = np.argsort(speed_list)
 neural_x = neural_x[ind]
