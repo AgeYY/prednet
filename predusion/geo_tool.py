@@ -59,7 +59,7 @@ def cos_para_layer(neural_x, error_bar='std'):
 
     return np.mean(dot_flat), err
 
-def pca_reduce(neural_x, n_components=20):
+def pca_reduce(neural_x, n_components=20, print_message=False, with_var_explained=False):
     '''
     reduce the dimensionality using pca
     input:
@@ -73,20 +73,27 @@ def pca_reduce(neural_x, n_components=20):
     pca = PCA(n_components=n_components)
     neural_x_flat = pca.fit_transform(neural_x_flat)
     neural_x = neural_x_flat.reshape(neural_x.shape[0], neural_x.shape[1], n_components)
-    print('the total variance explained is: ', np.cumsum(pca.explained_variance_ratio_)[-1])
+    if print_message:
+        print('the total variance explained is: ', np.cumsum(pca.explained_variance_ratio_)[-1])
+    if with_var_explained:
+        return neural_x, np.cumsum(pca.explained_variance_ratio_)
+
     return neural_x
 
-def procrustes_curve_diff_time(neural_x, error_bar='std'):
+def procrustes_curve_diff_time(neural_x, error_bar='std', n_com=3, print_message=False):
     '''
     calculate the disparity between curves x(t1, v) and x(t2, v)
     input:
       neural_x ([n_speed, n_time, feature])
     '''
+
     disparity = []
 
     for i in range(neural_x.shape[1] - 1):
         for j in range(i + 1, neural_x.shape[1]):
-            _, _, disparity_temp = procrustes(neural_x[:, i], neural_x[:, j])
+            neural_x_pair = neural_x[:, [i, j], :]
+            neural_x_pair = pca_reduce(neural_x_pair, n_components=n_com, print_message=print_message)
+            _, _, disparity_temp = procrustes(neural_x_pair[:, 0], neural_x_pair[:, 1])
             disparity.append(disparity_temp)
 
     if error_bar=='std':
@@ -95,3 +102,26 @@ def procrustes_curve_diff_time(neural_x, error_bar='std'):
         err = np.std(disparity) / np.sqrt(np.size(disparity))
 
     return np.mean(disparity), err
+
+def dim_manifold(neural_x, error_bar='std', n_com_max=None, print_message=False, thresh=0.95):
+    '''
+    dimensionality of the information manifold
+    '''
+    if n_com_max is None:
+        n_com_max = neural_x.shape[0]
+    pca = PCA(n_components=n_com_max)
+    dim = []
+    for i in range(neural_x.shape[1]):
+        pca.fit(neural_x[:, i])
+        var_explained = np.cumsum(pca.explained_variance_ratio_)
+
+        for j, var_exp in enumerate(var_explained):
+            if var_exp > thresh: break
+        dim.append(j)
+
+    if error_bar=='std':
+        err = np.std(dim)
+    else: # sem
+        err = np.std(dim) / np.sqrt(np.size(dim))
+
+    return np.mean(dim), err
