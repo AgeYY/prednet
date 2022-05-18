@@ -26,11 +26,12 @@ def align_data(data):
     #shift_neural_x = np.tile(np.expand_dims(neural_x_speed_mean, axis=0), (12, 1 , 1))
     return data - shift_neural_x
 
-def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2, title='', n_neighbors=2):
+def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2, title='', n_neighbors=2, align_data=False):
     '''
     data ([sample, feature])
     '''
-    data = align_data(data)
+    if align_data:
+        data = align_data(data)
     if method=='mds':
         embedding = MDS(n_components=n_components)
     elif method=='lle':
