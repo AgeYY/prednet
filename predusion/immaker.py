@@ -238,13 +238,19 @@ class Moving_square(): # generate a moving square along the x direction
     def clear_image(self):
         self.images=[]
 
+    def overlap_video(self, images, video):
+        '''
+        images is a sequence of frames where a moving square moving on a blackbackground
+        '''
+        pass
+
     def create_video_batch_on_video(self, video, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), color_bag=(0, 0, 0), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_', size_rect=20):
         '''
         similar as create_video_batch, but instead of static background, the moving square will move on a video
         '''
         for sp in speed:
             self.create_video(init_pos=init_pos, speed=sp, step=step, size_rect=size_rect, color_rect=color_rect, color_bag=(0, 0, 0), shape='rectangle')
-            self.overlap_video(self.images) # overlap the moving square to a video
+            self.overlap_video(self.images, video) # overlap the moving square to a video
 
             save_dir_label =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
             self.save_image(save_dir_label)
