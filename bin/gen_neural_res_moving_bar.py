@@ -6,11 +6,17 @@ import matplotlib.pyplot as plt
 from predusion.agent import Agent
 from data_utils import SequenceGenerator
 from kitti_settings import *
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_head', default='moving_bar', type=str,
+                    help='head of the dataset')
+arg = parser.parse_args()
+
+out_data_head = arg.data_head
 
 nt = 12 # each prediction group contains nt images
 batch_size = 10
-
-out_data_head = 'moving_bar'
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
 json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
@@ -18,7 +24,7 @@ train_file = os.path.join(DATA_DIR, out_data_head + '_X_train.hkl')
 train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
 label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 output_mode = ['E0', 'E1', 'E2', 'E3']
-output_name = 'neural_moving_bar_E' + '.hkl'
+output_name = 'neural_' + out_data_head + '_E' + '.hkl'
 #output_mode = ['R0', 'R1', 'R2', 'R3']
 #output_name = 'neural_moving_bar_R' + '.hkl'
 

@@ -202,21 +202,35 @@ class Moving_square(): # generate a moving square along the x direction
         self.images = []
         self.color_bag = color_bag # background of the images
         self.width = width # image width
+        self.init_im()
 
-    def create_video(self, init_pos = [0, 0], speed=2, step=20, color_rect=(255, 255, 255)):
+    def init_im(self, im_bag=None):
+        self.im_bag = im_bag
+
+    def create_video(self, init_pos = [0, 0], speed=2, step=20, color_rect=(255, 255, 255), color_bag=(0, 0, 0), size_rect=20, shape='rectangle', shape_para={}):
         self.init_pos = init_pos
-        self.size_rect = 20
-        self.color_1 = (255, 255, 255)
+        self.size_rect = size_rect
         self.speed = int(speed) # unit: pixels per frame
         self.step = step # number of time steps
 
+        if self.im_bag is None:
+            self.im_bag = Image.new('RGB', (self.width, self.width), color=color_bag)
+
         for i in range(step):
-            im = Image.new('RGB', (self.width, self.width))
-            draw = ImageDraw.Draw(im)
+            im_temp = self.im_bag.copy()
+            draw = ImageDraw.Draw(im_temp)
             curr_pos = (self.init_pos[0] + self.speed * i, self.init_pos[1]) # moving along the x direction
             rect_para = (curr_pos[0] - self.size_rect // 2, curr_pos[1] - self.size_rect // 2, curr_pos[0] + self.size_rect // 2, curr_pos[1] + self.size_rect // 2) # initial position
-            draw.rectangle(rect_para, fill=color_rect)
-            self.images.append(im)
+
+            if shape == 'rectangle':
+                draw.rectangle(rect_para, fill=color_rect)
+            elif shape == 'arc':
+                draw.arc(curr_pos, shape_para['start'], shape_para['end'], fill=color_rect)
+            elif shape == 'text':
+                draw.text(curr_pos, shape_para['text'], fill=color_rect)
+
+            self.images.append(im_temp)
+
     def save_image(self, save_dir='./kitti_data/raw/moving_bars'):
         if not os.path.exists(save_dir): os.makedirs(save_dir) # if doesn't exist, create the dir
         [self.images[i].save(save_dir + 'im_' + '{0:03}'.format(i) + '.jpg') for i in range(len(self.images))]
@@ -224,12 +238,27 @@ class Moving_square(): # generate a moving square along the x direction
     def clear_image(self):
         self.images=[]
 
-    def create_video_batch(self, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_'):
+    def create_video_batch_on_video(self, video, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), color_bag=(0, 0, 0), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_', size_rect=20):
+        '''
+        similar as create_video_batch, but instead of static background, the moving square will move on a video
+        '''
+        for sp in speed:
+            self.create_video(init_pos=init_pos, speed=sp, step=step, size_rect=size_rect, color_rect=color_rect, color_bag=(0, 0, 0), shape='rectangle')
+            self.overlap_video(self.images) # overlap the moving square to a video
+
+            save_dir_label =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
+            self.save_image(save_dir_label)
+            self.clear_image()
+        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
+        hkl.dump(label, save_dir_head + category + '/label.json')
+        pass
+
+    def create_video_batch(self, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), color_bag=(0, 0, 0), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_', size_rect=20, shape='rectangle', shape_para={}):
         '''
         save images and labels
         '''
         for sp in speed:
-            self.create_video(init_pos=init_pos, speed=sp, step=step)
+            self.create_video(init_pos=init_pos, speed=sp, step=step, size_rect=size_rect, color_rect=color_rect, color_bag=color_bag, shape=shape, shape_para=shape_para)
             save_dir_label =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
             self.save_image(save_dir_label)
             self.clear_image()

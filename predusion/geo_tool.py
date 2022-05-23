@@ -80,7 +80,23 @@ def pca_reduce(neural_x, n_components=20, print_message=False, with_var_explaine
 
     return neural_x
 
-def procrustes_curve_diff_time(neural_x, error_bar='std', n_com=3, print_message=False):
+def trans_norm(curve):
+    mean = np.mean(curve, axis=0)
+    mean = np.tile(mean[np.newaxis, ...], (curve.shape[0], 1))
+    var = np.sum(np.var(curve, axis=0))
+    curve_transformed = (curve - mean) / np.sqrt(var)
+    return curve_transformed
+
+def procrustes_translate_normalize(curve1, curve2):
+    '''
+    curve ([n_points, n_dim])
+    '''
+    curve1_t = trans_norm(curve1)
+    curve2_t = trans_norm(curve2)
+    d = (curve1_t - curve2_t)**2
+    return np.sum(d.flatten())
+
+def procrustes_curve_diff_time(neural_x, error_bar='std', n_com=3, print_message=False, method=None):
     '''
     calculate the disparity between curves x(t1, v) and x(t2, v)
     input:
@@ -93,7 +109,11 @@ def procrustes_curve_diff_time(neural_x, error_bar='std', n_com=3, print_message
         for j in range(i + 1, neural_x.shape[1]):
             neural_x_pair = neural_x[:, [i, j], :]
             neural_x_pair = pca_reduce(neural_x_pair, n_components=n_com, print_message=print_message)
-            _, _, disparity_temp = procrustes(neural_x_pair[:, 0], neural_x_pair[:, 1])
+            if method == 'tran_norm':
+                disparity_temp = procrustes_translate_normalize(neural_x_pair[:, 0], neural_x_pair[:, 1])
+
+            else:
+                _, _, disparity_temp = procrustes(neural_x_pair[:, 0], neural_x_pair[:, 1])
             disparity.append(disparity_temp)
 
     if error_bar=='std':
@@ -125,3 +145,27 @@ def dim_manifold(neural_x, error_bar='std', n_com_max=None, print_message=False,
         err = np.std(dim) / np.sqrt(np.size(dim))
 
     return np.mean(dim), err
+
+def ratio_speed_time(neural_x, error_bar='std', n_com=None, print_message=False):
+    '''
+    calculate the mean and se (or std) of one layer
+    input:
+      neural_x ([n_speed, n_time, feature])
+
+    '''
+    var_time, var_speed = [], []
+    # variance of time
+    for i_sp in range(neural_x.shape[0]):
+        neural_x_time = neural_x[i_sp]
+        var_time_temp = np.sum(np.var(neural_x_time, axis=0))
+        var_time.append(var_time_temp)
+    for i_t in range(neural_x.shape[1]):
+        neural_x_speed = neural_x[:, i_t]
+        var_speed_temp = np.sum(np.var(neural_x_speed, axis=0))
+        var_speed.append(var_speed_temp)
+    std_t, std_s = np.std(var_time), np.std(var_speed)
+    mean_var_t, mean_var_s = np.mean(var_time), np.mean(var_speed)
+    ratio = mean_var_s / mean_var_t
+    std_ratio = ratio * np.sqrt((std_s / mean_var_s)**2 + (std_t / mean_var_t)**2) # propagation of error
+
+    return ratio, std_ratio

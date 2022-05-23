@@ -6,23 +6,29 @@ import matplotlib.pyplot as plt
 
 from predusion.agent import Agent
 import predusion.geo_tool as geo_tool
+from predusion.manifold_analyzer import Manifold_analyzer
 from prednet import PredNet
 from data_utils import SequenceGenerator
 from kitti_settings import *
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_head', default='moving_bar', type=str,
+                    help='head of the dataset')
+arg = parser.parse_args()
+
+out_data_head = arg.data_head
 
 nt = 12 # each prediction group contains nt images
 
-out_data_head = 'moving_bar'
-#output_mode = ['E0', 'E1', 'E2', 'E3']
-#neural_data_path = 'neural_moving_bar_E' + '.hkl'
-output_mode = ['R0', 'R1', 'R2', 'R3']
-neural_data_path = 'neural_moving_bar_R' + '.hkl'
-geo_tool_method = 'procrustes_curve_diff_time'
-geo_tool_method = 'dim_manifold'
-geo_tool_method = 'cos_xt_xv'
+output_mode = ['E0', 'E1', 'E2', 'E3']
+neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
+#output_mode = ['R0', 'R1', 'R2', 'R3']
+#neural_data_path = 'neural_moving_bar_R' + '.hkl'
+geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
 cut0 = 2 # frames from cut_0 to cut
 cut = 12
-n_com_procrustes = 4
+n_com_procrustes = 3
 n_com_cos = 20
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
@@ -32,60 +38,38 @@ train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
 label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 print_message = False
 
+neural_dir = os.path.join(DATA_DIR, neural_data_path)
 
-## read the pixel
-train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction', shuffle=False)
-X_train, label = train_generator.create_all(out_label=True)
-speed_list = label
-pixel_x = X_train.reshape([X_train.shape[0], X_train.shape[1], -1])
+mani_analyzer = Manifold_analyzer()
+mani_analyzer.load_data(train_file, train_sources, label_file, neural_dir, add_shuffle_pixel=True, nt=nt)
 
-def shuffle_neuron(pixel_x):
-    pixel_x_shuffle = np.empty(pixel_x.shape)
-    for i in range(pixel_x.shape[0]): # shuffling neurons
-        for j in range(pixel_x.shape[1]):
-            pixel_x_shuffle[i, j] = np.random.permutation(pixel_x[i, j])
-    return pixel_x_shuffle
+mean_dot, err_dot = {}, {}
+for geo_tool_method in geo_tool_method_list:
+    if geo_tool_method == 'procrustes_curve_diff_time': n_com = n_com_procrustes
+    else: n_com = n_com_cos
 
-pixel_x_shuffle = shuffle_neuron(pixel_x)
+    mean_dot[geo_tool_method], err_dot[geo_tool_method] = mani_analyzer.analyze(geo_tool_method=geo_tool_method, n_com=n_com)
 
-#from sklearn.decomposition import PCA
-# read the neural data
-neural_x_all = hkl.load(os.path.join(DATA_DIR, neural_data_path))
-neural_x_all['pixel'] = pixel_x # merge pixel_x to neural data
-neural_x_all['pixel_shuffle'] = pixel_x_shuffle
-
-# rearange according to the neural speed
-speed_ind = np.argsort(speed_list)
-mean_dot, err_dot = [], []
-
-# prednet
-for mode in ['pixel_shuffle', 'pixel'] + output_mode:
-    neural_x = neural_x_all[mode].reshape([neural_x_all[mode].shape[0], neural_x_all[mode].shape[1], -1]) # (n_speed, n_time, features)
-    neural_x = neural_x[speed_ind][:, cut0:cut]
-    if geo_tool_method == 'cos_xt_xv':
-        neural_x = geo_tool.pca_reduce(neural_x, n_components=n_com_cos)
-        mean_dot_layer, err_dot_layer = geo_tool.cos_xt_xv(neural_x)
-    elif geo_tool_method == 'procrustes_curve_diff_time':
-        mean_dot_layer, err_dot_layer = geo_tool.procrustes_curve_diff_time(neural_x, print_message=print_message, n_com=n_com_procrustes)
-    elif geo_tool_method == 'dim_manifold':
-        mean_dot_layer, err_dot_layer = geo_tool.dim_manifold(neural_x)
-
-    mean_dot.append(mean_dot_layer)
-    err_dot.append(err_dot_layer)
-
-print(mean_dot, err_dot)
 
 import matplotlib.pyplot as plt
-fig, ax = plt.subplots()
-ax.scatter(range(-2, 4), mean_dot)
-ax.errorbar(range(-2, 4), mean_dot, yerr=err_dot)
-ax.axhline(0, color='k', linestyle='--')
-ax.set_xlabel('Layer of the Prednet \n -1 means the pixels \n -2 means shuffled pixels')
-if geo_tool_method == 'cos_xt_xv':
-    ax.set_ylabel('cos of the angle between the tangent \n vector along time and speed')
-elif geo_tool_method == 'procrustes_curve_diff_time':
-    ax.set_ylabel('disparity')
-elif geo_tool_method == 'dim_manifold':
-    ax.set_ylabel('Dimensionality when the expalined var is larger than 0.95')
+fig, ax = plt.subplots(2, 2, sharex=True)
+y_label = {}
+y_label['cos_xt_xv'] = 'cos of the angle between \n the tangent vector along \n time and speed'
+y_label['procrustes_curve_diff_time'] = 'dissimilarity'
+y_label['dim_manifold'] = 'number of principal components \n when the expalined var \n is larger than 0.95'
+y_label['ratio_speed_time'] = 'var of speed / var of time'
 
+for i, method in enumerate(geo_tool_method_list):
+    idx, idy = i//2, i%2
+    ax[idx, idy].scatter(range(-2, 4), mean_dot[method])
+    ax[idx, idy].errorbar(range(-2, 4), mean_dot[method], yerr=err_dot[method])
+    ax[idx, idy].axhline(0, color='k', linestyle='--')
+    ax[idx, idy].set_ylabel(y_label[method])
+
+fig.add_subplot(111, frameon=False)
+# hide tick and tick label of the big axis
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlabel('Layer of the Prednet \n -1 means the pixels; -2 means shuffled pixels')
+plt.tight_layout()
+plt.savefig('./figs/' + out_data_head + '.pdf')
 plt.show()
