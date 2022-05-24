@@ -3,6 +3,7 @@
 from predusion.immaker import Moving_square
 from predusion import im_processor as impor
 from PIL import Image, ImageDraw
+import hickle as hkl
 
 width = 200
 step = 12
@@ -48,11 +49,21 @@ ms = Moving_square(width=width)
 #categories = [out_data_head]
 #impor.process_data(categories, out_data_head=out_data_head)
 
-size_rect=30
-out_data_head = 'moving_bar_wustl'
-img_bag = Image.open('./data/wustl.jpg').convert('RGB').resize((width, width))
+#size_rect=30
+#out_data_head = 'moving_bar_wustl'
+#img_bag = Image.open('./data/wustl.jpg').convert('RGB').resize((width, width))
+#
+#ms.init_im(img_bag)
+#ms.create_video_batch(init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
+#categories = [out_data_head]
+#impor.process_data(categories, out_data_head=out_data_head)
 
-ms.init_im(img_bag)
-ms.create_video_batch(init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
+size_rect=30
+out_data_head = 'moving_bar_on_video'
+video_id = 6
+natural_video_path = './data/natural_video_' + str(video_id) + '.hkl'
+
+video = hkl.load(natural_video_path)
+ms.create_video_batch_on_video(video, init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
 categories = [out_data_head]
 impor.process_data(categories, out_data_head=out_data_head)

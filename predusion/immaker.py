@@ -242,11 +242,18 @@ class Moving_square(): # generate a moving square along the x direction
         '''
         images is a sequence of frames where a moving square moving on a blackbackground
         '''
-        pass
+        video_size = [imresize(im, (self.width, self.width)) for im in video]
+
+        n_frame = min(len(images), video.shape[0])
+        images_temp = []
+        for i in range(n_frame):
+            images_temp_max = np.maximum(images[i], video_size[i])
+            images_temp.append(Image.fromarray(images_temp_max))
+        self.images = images_temp
 
     def create_video_batch_on_video(self, video, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), color_bag=(0, 0, 0), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_', size_rect=20):
         '''
-        similar as create_video_batch, but instead of static background, the moving square will move on a video
+        similar as create_video_batch, but instead of static background, the moving square will move on a video. The number of frames would be the minimum of frames in the moving bar video and the input video. UGLY CODE, NEEDS TO BE IMPROVED.
         '''
         for sp in speed:
             self.create_video(init_pos=init_pos, speed=sp, step=step, size_rect=size_rect, color_rect=color_rect, color_bag=(0, 0, 0), shape='rectangle')
@@ -257,7 +264,6 @@ class Moving_square(): # generate a moving square along the x direction
             self.clear_image()
         label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
-        pass
 
     def create_video_batch(self, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), color_bag=(0, 0, 0), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_', size_rect=20, shape='rectangle', shape_para={}):
         '''

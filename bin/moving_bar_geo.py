@@ -27,7 +27,7 @@ neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
 #neural_data_path = 'neural_moving_bar_R' + '.hkl'
 geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
 cut0 = 2 # frames from cut_0 to cut
-cut = 12
+cut = nt
 n_com_procrustes = 3
 n_com_cos = 20
 
