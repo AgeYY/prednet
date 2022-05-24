@@ -277,6 +277,11 @@ class Moving_square(): # generate a moving square along the x direction
         label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
 
+class Drift_grid():
+    def create_
+
+class Moving_dots():
+    pass
 
 
 if __name__ == '__main__':
