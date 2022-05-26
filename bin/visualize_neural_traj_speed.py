@@ -17,9 +17,12 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_head', default='moving_bar', type=str,
                     help='head of the dataset')
+parser.add_argument('--nt', default=12, type=int,
+                    help='number of frames per video')
 arg = parser.parse_args()
 
 out_data_head = arg.data_head
+nt = arg.nt
 
 def align_data(data, delta):
     '''
@@ -62,7 +65,6 @@ def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2,
     plt.title(title)
     plt.savefig('./figs/' + title + '.pdf')
 
-nt = 12 # each prediction group contains nt images
 batch_size = 10
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
@@ -75,11 +77,11 @@ output_mode = ['E0', 'E1', 'E2', 'E3']
 neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
 #output_mode = ['R0', 'R1', 'R2', 'R3']
 #neural_data_path = 'neural_moving_bar_R' + '.hkl'
-cut = nt
-cut0_time=cut-4 # the curvature of a trajectory is the mean from curvature from the cutoff frame to the end. Due to the cutoff, the curvature of artificial video is no longer the same as natural video, but the affect should be minor
+cut = 7
+cut0_time=5 # the curvature of a trajectory is the mean from curvature from the cutoff frame to the end. Due to the cutoff, the curvature of artificial video is no longer the same as natural video, but the affect should be minor
 embed_method = 'pca'
 n_components = 3
-align_delta = 100
+align_delta = None
 
 colorinfo_time = np.arange(cut0_time, cut) # temperal color scheme
 colorinfo_time = np.tile(colorinfo_time, (12, 1)).flatten()
@@ -97,7 +99,6 @@ ind = np.argsort(speed_list)
 neural_x = neural_x[ind]
 plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_time, title=out_data_head + '_' + embed_method + '_pixel_color_time', align_delta=align_delta)
 plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_speed, title=out_data_head + '_' + embed_method + '_pixel_color_speed', align_delta=align_delta)
-
 
 neural_x_all = hkl.load(os.path.join(DATA_DIR, neural_data_path))
 for mode in output_mode:

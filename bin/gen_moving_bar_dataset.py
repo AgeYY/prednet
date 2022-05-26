@@ -1,9 +1,10 @@
 # generate moving bar images and dataset as moving_bar_train.hkl.
 
-from predusion.immaker import Moving_square
+from predusion.immaker import Moving_square, Drift_grid, Moving_dot
 from predusion import im_processor as impor
 from PIL import Image, ImageDraw
 import hickle as hkl
+import numpy as np
 
 width = 200
 step = 12
@@ -67,3 +68,26 @@ video = hkl.load(natural_video_path)
 ms.create_video_batch_on_video(video, init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
 categories = [out_data_head]
 impor.process_data(categories, out_data_head=out_data_head)
+
+#out_data_head = 'GratingStim'
+#category = out_data_head
+#
+#dg = Moving_dot()
+#speed_list = np.linspace(0.02, 0.15, step)
+#
+#dg.set_stim_obj(obj_name=out_data_head)
+#
+#dg.create_video_batch(speed_list=speed_list, n_frame=step, category=out_data_head)
+#categories = [out_data_head]
+#impor.process_data(categories, out_data_head=out_data_head)
+
+
+#dg = Moving_dot()
+#speed_list = np.linspace(1, 8, step)
+#
+#for coher in [1.0, 0.8, 0.5, 0.3]:
+#    out_data_head = 'DotStim' + str(coher)
+#    dg.set_stim_obj(obj_name='DotStim', coherence=coher)
+#    dg.create_video_batch(speed_list=speed_list, n_frame=step, category=out_data_head)
+#    categories = [out_data_head]
+#    impor.process_data(categories, out_data_head=out_data_head)

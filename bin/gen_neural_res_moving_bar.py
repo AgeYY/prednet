@@ -11,11 +11,14 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_head', default='moving_bar', type=str,
                     help='head of the dataset')
+parser.add_argument('--nt', default=12, type=int,
+                    help='number of frames per video')
+
 arg = parser.parse_args()
 
 out_data_head = arg.data_head
+nt = arg.nt
 
-nt = 12 # each prediction group contains nt images
 batch_size = 10
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')

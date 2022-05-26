@@ -12,7 +12,7 @@ gratingStimulus = visual.GratingStim(win=win0, tex='sin', units='pix', pos=(
 win0.getMovieFrame(buffer='back')
 startTime = time.time()
 runTime = 2 # run stimulus for 15 seconds
-
+images = []
 while(time.time() - startTime < runTime):
  #   win0.getMovieFrame(buffer='back') # get every upcoming frame?
     gratingStimulus.setPhase(0.02, '+')
@@ -28,4 +28,4 @@ while(time.time() - startTime < runTime):
     event.clearEvents()
 print("Play time: ", time.time()-startTime)    
 win0.close()
-win0.saveMovieFrames(fileName='testMovie.mp4') # save frames as video file
+win0.saveMovieFrames(fileName='./testMovie.mp4') # save frames as video file

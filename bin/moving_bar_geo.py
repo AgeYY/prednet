@@ -15,11 +15,12 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_head', default='moving_bar', type=str,
                     help='head of the dataset')
+parser.add_argument('--nt', default=12, type=int,
+                    help='number of frames per video')
 arg = parser.parse_args()
 
 out_data_head = arg.data_head
-
-nt = 12 # each prediction group contains nt images
+nt = arg.nt
 
 output_mode = ['E0', 'E1', 'E2', 'E3']
 neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
@@ -49,7 +50,6 @@ for geo_tool_method in geo_tool_method_list:
     else: n_com = n_com_cos
 
     mean_dot[geo_tool_method], err_dot[geo_tool_method] = mani_analyzer.analyze(geo_tool_method=geo_tool_method, n_com=n_com)
-
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(2, 2, sharex=True)

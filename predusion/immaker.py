@@ -7,8 +7,11 @@ from imageio import imsave
 from scipy.ndimage import gaussian_filter
 from scipy.misc import imresize
 from PIL import Image, ImageDraw
+import sys
 import os
 import hickle as hkl
+from psychopy import visual, core, event
+import time
 
 
 class Immaker():
@@ -277,59 +280,173 @@ class Moving_square(): # generate a moving square along the x direction
         label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
 
-class Drift_grid():
-    def create_
+class Visual_stim_gen():
+    def __init__(self, imshape=(200, 200)):
+        self.imshape=imshape
 
-class Moving_dots():
-    pass
+    def create_video(self):
+        pass
 
+    def save_image(self, images, save_dir='./kitti_data/raw/moving_bars'):
+        if not os.path.exists(save_dir): os.makedirs(save_dir) # if doesn't exist, create the dir
+        [images[i].save(save_dir + 'im_' + '{0:03}'.format(i) + '.jpg') for i in range(len(images))]
+
+class Drift_grid(Visual_stim_gen):
+
+    def create_video(self, sf=0.02, ori=0.0, speed=0.02, tex='sin', n_frame=12):
+        '''
+        speed (float): in the unit of phase_speed per frame
+        '''
+
+        win0 = visual.Window(self.imshape, screen = 0, monitor = 'testMonitor', fullscr=False, color=[0, 0, 0], units='pix')
+
+        gratingStimulus = visual.GratingStim(win=win0, tex=tex, units='pix', pos=(0.0, 0.0), size=self.imshape[0], sf=sf, ori=ori, phase=(0.0, 0.0))
+
+        win0.getMovieFrame(buffer='back')
+        images = []
+        for i in range(n_frame):
+            gratingStimulus.setPhase(speed, '+')
+            # 1st parameter is for speed of drifting
+            # 2nd parameter is for direction of drifint ('+': left to right)
+            gratingStimulus.draw()
+            win0.flip()
+            img = win0.getMovieFrame()
+            images.append(img)
+
+            if len(event.getKeys()) > 0:
+                break
+        event.clearEvents()
+        win0.close()
+        return images
+
+    def create_video_batch(self, sf=0.02, ori=0.0, speed_list=[], tex='sin', n_frame=12, save_dir_head='./kitti_data/raw/', category='drift_grid', sub_dir_head='sp_'):
+        '''
+        n_frame (int): the number of frames in each video
+        '''
+        for sp in speed_list:
+            images = self.create_video(sf=sf, ori=ori, speed=sp, tex=tex, n_frame=n_frame)
+            save_dir =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
+            self.save_image(images, save_dir=save_dir)
+
+        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed_list} # source_folder : label. source_folder format is the same as process_kitti.py
+        hkl.dump(label, save_dir_head + category + '/label.json')
+
+
+class Moving_dot(Visual_stim_gen):
+    '''
+    to add new stimuli, change set_stim_obj, speed_wraper and create_video
+    '''
+
+    def __init__(self, imshape=(200, 200)):
+        self.imshape=imshape
+        self.obj = None
+
+    def set_stim_obj(self, obj_name='GratingStim', **kwargs):
+        '''
+        preferred kwargs for gratingstim is sf=0.02, ori=0.0, speed_list=[], tex='sin'
+        '''
+        self.obj_name = obj_name
+
+        if obj_name=='GratingStim':
+            self.kwargs = {'sf':0.02, 'ori': 0.0, 'tex':'sin', 'size':self.imshape[0]}
+        elif obj_name=='DotStim':
+            self.kwargs = {'dotSize': 10, 'fieldSize':400, 'dotLife':100, 'nDots': 100, 'coherence':0.8, 'dotLife':-1}
+
+        self.kwargs.update(kwargs)
+
+    def _speed_wraper(self, speed):
+        if self.obj_name == 'GratingStim':
+            return self.obj.setPhase(speed, '+')
+        if self.obj_name == 'DotStim':
+            return None
+
+    def create_video(self, speed=0.02, tex='sin', n_frame=12):
+        '''
+        speed (float): in the unit of phase_speed per frame
+        '''
+        win0 = visual.Window(self.imshape, screen = 0, monitor = 'testMonitor', fullscr=False, color=[0, 0, 0], units='pix')
+
+        if self.obj_name == 'GratingStim':
+            self.obj = visual.GratingStim(win=win0, **self.kwargs)
+        elif self.obj_name == 'DotStim':
+            self.obj = visual.DotStim(win=win0, speed=speed, **self.kwargs)
+
+        win0.getMovieFrame(buffer='back')
+        images = []
+        for i in range(n_frame):
+            self._speed_wraper(speed)
+            self.obj.draw()
+            win0.flip()
+            img = win0.getMovieFrame()
+            images.append(img)
+
+            if len(event.getKeys()) > 0:
+                break
+        event.clearEvents()
+        win0.close()
+        return images
+
+    def create_video_batch(self, speed_list=[], n_frame=12, save_dir_head='./kitti_data/raw/', category='GratingStim', sub_dir_head='sp_'):
+        '''
+        n_frame (int): the number of frames in each video
+        '''
+        for sp in speed_list:
+            images = self.create_video(speed=sp, n_frame=n_frame)
+            save_dir =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
+            self.save_image(images, save_dir=save_dir)
+
+        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed_list} # source_folder : label. source_folder format is the same as process_kitti.py
+        hkl.dump(label, save_dir_head + category + '/label.json')
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    n_image = 5
-
-    frac_d = 2
-    ratio_db = 3
-    imshape = (128, 160)
-
-    grid = Grid(imshape)
-    grid.set_grid(offset=[64, 80], frac_d=frac_d, ratio_db=ratio_db)
-
-    for i in range(n_image):
-        save_path = './figs/grid_{0}_{1}_{2}.png'.format(frac_d, ratio_db, i)
-        grid.save_fig(save_path=save_path)
-
-    center = 10
-    width = 10
-    square = Square(imshape)
-    square.set_square()
-
-    for i in range(n_image):
-        save_path = './figs/square_{0}_{1}_{2}.png'.format(center, width, i)
-        square.save_fig(save_path=save_path)
-
-    # generate color noise images
-    w_img = Batch_gen().color_noise_full(imshape, 3, 2)
-
-    plt.figure()
-    for im in w_img[1]:
-        plt.imshow(im)
-        plt.show()
-
-    # generate grey noise images
-    w_img = Batch_gen().grey_noise_full(imshape, 3, 2)
-
-    plt.figure()
-    for im in w_img[1]:
-        plt.imshow(im)
-        plt.show()
-
-    imshape = (128, 160)
-    # generate grey noise images
-    w_img = Batch_gen().grey_noise_full(imshape, 3, 2, sig=(0, 2, 2))
-
-    plt.figure()
-    for im in w_img[1]:
-        plt.imshow(im)
-        plt.show()
+#    import matplotlib.pyplot as plt
+#
+#    n_image = 5
+#
+#    frac_d = 2
+#    ratio_db = 3
+#    imshape = (128, 160)
+#
+#    grid = Grid(imshape)
+#    grid.set_grid(offset=[64, 80], frac_d=frac_d, ratio_db=ratio_db)
+#
+#    for i in range(n_image):
+#        save_path = './figs/grid_{0}_{1}_{2}.png'.format(frac_d, ratio_db, i)
+#        grid.save_fig(save_path=save_path)
+#
+#    center = 10
+#    width = 10
+#    square = Square(imshape)
+#    square.set_square()
+#
+#    for i in range(n_image):
+#        save_path = './figs/square_{0}_{1}_{2}.png'.format(center, width, i)
+#        square.save_fig(save_path=save_path)
+#
+#    # generate color noise images
+#    w_img = Batch_gen().color_noise_full(imshape, 3, 2)
+#
+#    plt.figure()
+#    for im in w_img[1]:
+#        plt.imshow(im)
+#        plt.show()
+#
+#    # generate grey noise images
+#    w_img = Batch_gen().grey_noise_full(imshape, 3, 2)
+#
+#    plt.figure()
+#    for im in w_img[1]:
+#        plt.imshow(im)
+#        plt.show()
+#
+#    imshape = (128, 160)
+#    # generate grey noise images
+#    w_img = Batch_gen().grey_noise_full(imshape, 3, 2, sig=(0, 2, 2))
+#
+#    plt.figure()
+#    for im in w_img[1]:
+#        plt.imshow(im)
+#        plt.show()
+    #### test drift_grid
+    dg = Drift_grid()
+    dg.create_video()
