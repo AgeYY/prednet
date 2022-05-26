@@ -21,8 +21,9 @@ from kitti_settings import *
 
 
 save_model = True  # if weights will be saved
-weights_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_weights.hdf5')  # where weights will be saved
-json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
+
+weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/untrain_prednet_kitti_weights.hdf5')  # where weights will be saved
+json_file = os.path.join(WEIGHTS_DIR, 'untrain_prednet_kitti_model.json')
 
 # Data files
 train_file = os.path.join(DATA_DIR, 'X_train.hkl')
@@ -31,10 +32,10 @@ val_file = os.path.join(DATA_DIR, 'X_val.hkl')
 val_sources = os.path.join(DATA_DIR, 'sources_val.hkl')
 
 ## Training parameters
-nb_epoch = 150
-batch_size = 4
-samples_per_epoch = 500
-N_seq_val = 100  # number of sequences to use for validation
+nb_epoch = 0
+batch_size = 1
+samples_per_epoch = 0
+N_seq_val = 0  # number of sequences to use for validation
 
 # Model parameters
 n_channels, im_height, im_width = (3, 128, 160)
@@ -62,18 +63,7 @@ errors_by_time = Flatten()(errors_by_time)  # will be (batch_size, nt)
 final_errors = Dense(1, weights=[time_loss_weights, np.zeros(1)], trainable=False)(errors_by_time)  # weight errors by time
 model = Model(inputs=inputs, outputs=final_errors)
 model.compile(loss='mean_absolute_error', optimizer='adam')
-
-train_generator = SequenceGenerator(train_file, train_sources, nt, batch_size=batch_size, shuffle=True)
-val_generator = SequenceGenerator(val_file, val_sources, nt, batch_size=batch_size, N_seq=N_seq_val)
-
-lr_schedule = lambda epoch: 0.001 if epoch < 75 else 0.0001    # start with lr of 0.001 and then drop to 0.0001 after 75 epochs
-callbacks = [LearningRateScheduler(lr_schedule)]
-if save_model:
-    if not os.path.exists(WEIGHTS_DIR): os.mkdir(WEIGHTS_DIR)
-    callbacks.append(ModelCheckpoint(filepath=weights_file, monitor='val_loss', save_best_only=True))
-
-history = model.fit_generator(train_generator, samples_per_epoch / batch_size, nb_epoch, callbacks=callbacks,
-                validation_data=val_generator, validation_steps=N_seq_val / batch_size)
+model.save_weights(filepath=weights_file)
 
 if save_model:
     json_string = model.to_json()

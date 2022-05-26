@@ -14,11 +14,11 @@ init_pos = [30, width//2]
 # create raw video
 ms = Moving_square(width=width)
 
-#size_rect=10
-#out_data_head = 'moving_bar' + str(size_rect)
-#ms.create_video_batch(init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
-#categories = [out_data_head]
-#impor.process_data(categories, out_data_head=out_data_head)
+size_rect=20
+out_data_head = 'moving_bar' + str(size_rect)
+ms.create_video_batch(init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
+categories = [out_data_head]
+impor.process_data(categories, out_data_head=out_data_head)
 
 #size_rect=20
 #out_data_head = 'moving_bar_bg_color'
@@ -59,15 +59,15 @@ ms = Moving_square(width=width)
 #categories = [out_data_head]
 #impor.process_data(categories, out_data_head=out_data_head)
 
-size_rect=30
-out_data_head = 'moving_bar_on_video'
-video_id = 6
-natural_video_path = './data/natural_video_' + str(video_id) + '.hkl'
-
-video = hkl.load(natural_video_path)
-ms.create_video_batch_on_video(video, init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
-categories = [out_data_head]
-impor.process_data(categories, out_data_head=out_data_head)
+#size_rect=30
+#out_data_head = 'moving_bar_on_video'
+#video_id = 6
+#natural_video_path = './data/natural_video_' + str(video_id) + '.hkl'
+#
+#video = hkl.load(natural_video_path)
+#ms.create_video_batch_on_video(video, init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
+#categories = [out_data_head]
+#impor.process_data(categories, out_data_head=out_data_head)
 
 #out_data_head = 'GratingStim'
 #category = out_data_head

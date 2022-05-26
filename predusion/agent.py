@@ -25,12 +25,12 @@ class Agent():
         # Create testing model (to output predictions)
         layer_config = self.train_model.layers[1].get_config()
         layer_config['output_mode'] = output_mode
-        data_format = layer_config['data_format'] if 'data_format' in layer_config else layer_config['dim_ordering']
+        self.data_format = layer_config['data_format'] if 'data_format' in layer_config else layer_config['dim_ordering']
         self.test_prednet = PredNet(weights=self.train_model.layers[1].get_weights(), **layer_config)
 
         return self.test_prednet
 
-    def output_multiple(self, seq_batch, cha_first=False, is_upscaled=True, output_mode=['prediction'], batch_size=10):
+    def output_multiple(self, seq_batch, cha_first=None, is_upscaled=True, output_mode=['prediction'], batch_size=10):
         '''
         output multiple modules' neural response
         '''
@@ -40,14 +40,14 @@ class Agent():
 
         return feature
 
-    def output(self, seq_batch, cha_first=False, is_upscaled=True, output_mode='prediction', batch_size=10):
+    def output(self, seq_batch, cha_first=None, is_upscaled=True, output_mode='prediction', batch_size=10):
         '''
         input:
           seq_batch (np array, numeric, [number of sequences, number of images in each sequence, imshape[0], imshape[1], 3 channels]): if cha_first is false, the final three dimension should be imshape[0], imshape[1], 3 channels; if cha_first is ture, the final three dimensions should be 3 channels, imshape[0], imshape[1].
           is_upscaled (bool): True means the RGB value in the seq ranges from 0 to 255 and need to be normalized. The output seq_hat RGB values are in the same range as the input seq.
         '''
         self.test_prednet = self._build_test_prednet(output_mode)
-
+        
         input_shape = list(self.train_model.layers[0].batch_input_shape[1:]) # find the input shape, (number of images, 3 channels, imshape[0], imshape[1]) if the channel_first = True
         input_shape[0] = seq_batch.shape[1]
         inputs = Input(shape=tuple(input_shape))
@@ -59,12 +59,12 @@ class Agent():
         if is_upscaled:
             seq_wrapper = seq_wrapper / 255
 
-        if cha_first:
-            seq_hat = test_model.predict(seq_wrapper, batch_size=batch_size)
-        else:
+        if self.data_format == 'channels_first':
             seq_tran = np.transpose(seq_wrapper, (0, 1, 4, 2, 3)) # make it channel first
             seq_hat = test_model.predict(seq_tran, batch_size=batch_size)
             seq_hat = np.transpose(seq_hat, (0, 1, 3, 4, 2)) # convert to original shape
+        else:
+            seq_hat = test_model.predict(seq_wrapper, batch_size=batch_size)
 
         if (is_upscaled) and (output_mode == 'prediction'):
             seq_hat = seq_hat * 255

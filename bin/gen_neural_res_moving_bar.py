@@ -13,16 +13,22 @@ parser.add_argument('--data_head', default='moving_bar', type=str,
                     help='head of the dataset')
 parser.add_argument('--nt', default=12, type=int,
                     help='number of frames per video')
+parser.add_argument('--weights_file', default='prednet_kitti_weights.hdf5', type=str,
+                    help='weights for prednet')
+parser.add_argument('--json_file', default='prednet_kitti_model.json', type=str,
+                    help='json for the prednet')
 
 arg = parser.parse_args()
 
 out_data_head = arg.data_head
 nt = arg.nt
+weights_file = arg.weights_file
+json_file = arg.json_file
 
 batch_size = 10
 
-weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
-json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
+weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/' + weights_file)
+json_file = os.path.join(WEIGHTS_DIR, json_file)
 train_file = os.path.join(DATA_DIR, out_data_head + '_X_train.hkl')
 train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
 label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
