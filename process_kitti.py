@@ -69,21 +69,24 @@ def my_process_data():
 # resize and crop image
 def process_im(im, desired_sz):
     '''
-    First step: 
+    reshape and normalize
     '''
     im_temp = im.copy()
-    if im.shape[0] / im.shape[1] > desired_sz[0] / desired_sz[1]:
-        target_ds = float(desired_sz[1])/im.shape[1]
-        im = imresize(im, (int(np.round(target_ds * im.shape[0])), desired_sz[1]))
-        d = int((im.shape[0] - desired_sz[0]) / 2)
-        im = im[d:d+desired_sz[0], :]
+    if im_temp.shape[0] / im_temp.shape[1] > desired_sz[0] / desired_sz[1]:
+        target_ds = float(desired_sz[1])/im_temp.shape[1]
+        im_temp = imresize(im_temp, (int(np.round(target_ds * im_temp.shape[0])), desired_sz[1]))
+        d = int((im_temp.shape[0] - desired_sz[0]) / 2)
+        im_temp = im_temp[d:d+desired_sz[0], :]
     else:
-        target_ds = float(desired_sz[0])/im.shape[0]
-        im = imresize(im, (desired_sz[0], int(np.round(target_ds * im.shape[1]))))
-        d = int((im.shape[1] - desired_sz[1]) / 2)
-        im = im[:, d:d+desired_sz[1]]
+        target_ds = float(desired_sz[0])/im_temp.shape[0]
+        im_temp = imresize(im_temp, (desired_sz[0], int(np.round(target_ds * im_temp.shape[1]))))
+        d = int((im_temp.shape[1] - desired_sz[1]) / 2)
+        im_temp = im_temp[:, d:d+desired_sz[1]]
 
-    return im
+    im_norm = cv2.normalize(im_temp, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
+    im_norm = im_norm.astype(np.uint8)
+
+    return im_norm
 
 if __name__ == '__main__':
     my_process_data()

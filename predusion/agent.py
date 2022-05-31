@@ -44,7 +44,7 @@ class Agent():
         '''
         input:
           seq_batch (np array, numeric, [number of sequences, number of images in each sequence, imshape[0], imshape[1], 3 channels]): if cha_first is false, the final three dimension should be imshape[0], imshape[1], 3 channels; if cha_first is ture, the final three dimensions should be 3 channels, imshape[0], imshape[1].
-          is_upscaled (bool): True means the RGB value in the seq ranges from 0 to 255 and need to be normalized. The output seq_hat RGB values are in the same range as the input seq.
+          is_upscaled (bool): True means the RGB value in the seq ranges from 0 to 255 and need to be normalized. The output seq_hat RGB values are in the same range as the input seq. Note the data processed by SequenceGenerator is from 0 to 1
         '''
         self.test_prednet = self._build_test_prednet(output_mode)
         

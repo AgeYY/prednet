@@ -51,6 +51,15 @@ X_train, label = train_generator.create_all(out_label=True)
 sub = Agent()
 sub.read_from_json(json_file, weights_file)
 
-output = sub.output_multiple(X_train, output_mode=output_mode, batch_size=batch_size)
+output = sub.output_multiple(X_train, output_mode=output_mode, batch_size=batch_size, is_upscaled=False)
+
+## Check the prediction
+#import matplotlib.pyplot as plt
+#from predusion.ploter import Ploter
+#
+#output = sub.output(X_train, output_mode='prediction', batch_size=batch_size, is_upscaled=False)
+#plter = Ploter()
+#fig, gs = plter.plot_seq_prediction(X_train[1], output[1])
+#plt.show()
 
 hkl.dump(output, os.path.join(DATA_DIR, output_name))

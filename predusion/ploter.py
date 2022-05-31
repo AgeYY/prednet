@@ -2,6 +2,7 @@
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 
 class Ploter():
 
@@ -11,7 +12,7 @@ class Ploter():
         plot prediction of one sequence
         input:
           stimuli (n_image, *imshape, 3): rgb color
-          prediction (n_image, *imshape, 3): the output of Agent() while the output_mode is prediction
+          prediction (n_image, *imshape, 3): the output of Agent() while the output_mode is prediction. The value should be 0 to 255 int
         output:
           fig, ax
         '''
@@ -23,11 +24,22 @@ class Ploter():
 
         for t, sq_s, sq_p in zip(range(n_image), stimuli, prediction):
             plt.subplot(gs[t])
-            plt.imshow(sq_s.astype(int))
+
+            ## the image can be ploted without explicit normalization anyway
+            #sq_s_norm = cv2.normalize(sq_s, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
+            #sq_p_norm = cv2.normalize(sq_p, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
+
+            #sq_s_norm = sq_s_norm.astype(np.uint8)
+            #sq_p_norm = sq_p_norm.astype(np.uint8)
+
+            sq_s_norm = sq_s
+            sq_p_norm = sq_p
+
+            plt.imshow(sq_s_norm)
             plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
             plt.subplot(gs[t + n_image])
-            plt.imshow(sq_p.astype(int))
+            plt.imshow(sq_p_norm)
             plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
 
         return fig, gs
