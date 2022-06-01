@@ -27,12 +27,13 @@ nt = arg.nt
 output_mode = ['R0', 'R1', 'R2', 'R3']
 neural_data_path = 'neural_moving_bar_R' + '.hkl'
 geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
+geo_tool_method_list = ['cos_xt_xv']
 cut0 = 4 # frames from cut_0 to cut
 cut = nt
 cut0_speed = 0
 cut_speed = nt
 n_com_procrustes = 3
-n_com_cos = 20
+n_com_cos = None
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
 json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')

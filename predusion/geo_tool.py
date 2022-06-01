@@ -12,6 +12,19 @@ def cos_xt_xv(neural_x, error_bar='std'):
     neural_x_time = np.gradient(neural_x, axis=1)
     neural_x_speed = np.gradient(neural_x, axis=0)
 
+    # collecting all tangent vectors
+    neural_x_time_flat = neural_x_time.reshape((-1, neural_x_time.shape[-1]))
+    neural_x_speed_flat = neural_x_speed.reshape((-1, neural_x_speed.shape[-1]))
+    ## fit the subspace
+    #nc = 6
+    #pca = PCA(n_components=nc)
+    #neural_x_speed_flat = pca.inverse_transform( pca.fit_transform(neural_x_speed_flat) )
+    #neural_x_speed = neural_x_speed_flat.reshape( neural_x_speed.shape )
+    #print('speed tangent: ', np.cumsum(pca.explained_variance_ratio_))
+    #neural_x_time_flat = pca.inverse_transform( pca.fit_transform(neural_x_time_flat) )
+    #neural_x_time = neural_x_time_flat.reshape( neural_x_time.shape )
+    #print('time tangent: ', np.cumsum(pca.explained_variance_ratio_))
+
     # calculate the cos
     dot = np.sum(neural_x_time * neural_x_speed, axis=-1) / np.linalg.norm(neural_x_time, axis=2) / np.linalg.norm(neural_x_speed, axis=2)
     #print(np.isnan(dot))
@@ -59,7 +72,7 @@ def cos_para_layer(neural_x, error_bar='std'):
 
     return np.mean(dot_flat), err
 
-def pca_reduce(neural_x, n_components=20, print_message=False, with_var_explained=False):
+def pca_reduce(neural_x, n_components=None, print_message=False, with_var_explained=False):
     '''
     reduce the dimensionality using pca
     input:
@@ -68,6 +81,9 @@ def pca_reduce(neural_x, n_components=20, print_message=False, with_var_explaine
       neural_x ([n_speed, n_time, n_components])
       total_var_explained (float)
     '''
+    if n_components is None:
+        return neural_x
+
     # pca processing
     neural_x_flat = neural_x.reshape(-1, neural_x.shape[-1])
     pca = PCA(n_components=n_components)
