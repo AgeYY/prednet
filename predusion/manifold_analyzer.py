@@ -43,7 +43,7 @@ class Manifold_analyzer():
             self.neural_x_all['pixel_shuffle'] = pixel_x_shuffle
             self.output_mode.insert(0, 'pixel_shuffle')
 
-    def analyze(self, geo_tool_method='cos_xt_xv', cut0=2, cut=12, n_com=20, print_pca_message=False):
+    def analyze(self, geo_tool_method='cos_xt_xv', cut0=2, cut=12, n_com=20, print_pca_message=False, cut0_speed=0, cut_speed=12):
         '''
         geo_tool_method (str): cos_xt_xv, procrustes_curve_diff_time, dim_manifold, ratio_speed_time
         cut0, cut (int): only consider the cut0 frame to the cut frame
@@ -56,7 +56,7 @@ class Manifold_analyzer():
 
         for mode in self.output_mode:
             neural_x = self.neural_x_all[mode].reshape([self.neural_x_all[mode].shape[0], self.neural_x_all[mode].shape[1], -1]) # (n_speed, n_time, features)
-            neural_x = neural_x[speed_ind][:, cut0:cut]
+            neural_x = neural_x[speed_ind][cut0_speed:cut_speed, cut0:cut]
             if geo_tool_method == 'cos_xt_xv':
                 neural_x = geo_tool.pca_reduce(neural_x, n_components=n_com)
                 mean_dot_layer, err_dot_layer = geo_tool.cos_xt_xv(neural_x)

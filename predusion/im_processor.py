@@ -17,10 +17,11 @@ from imageio import imread
 from scipy.misc import imresize
 import hickle as hkl
 from kitti_settings import *
+import cv2
 
 if not os.path.exists(DATA_DIR): os.mkdir(DATA_DIR)
 
-def process_data(categories=[], desired_im_sz=(128, 160), val_recordings=[], test_recordings=[], out_data_head=''):
+def process_data(categories=[], desired_im_sz=(128, 160), val_recordings=[], test_recordings=[], out_data_head='', scale=None):
     '''
     input:
       out_data_head (str):
@@ -63,29 +64,48 @@ def process_data(categories=[], desired_im_sz=(128, 160), val_recordings=[], tes
         X = np.zeros((len(im_list),) + desired_im_sz + (3,), np.uint8)
         for i, im_file in enumerate(im_list):
             im = imread(im_file, pilmode='RGB') # this will ignore the transparency channel of the image
-            X[i] = process_im(im, desired_im_sz)
+            X[i] = process_im(im, desired_im_sz, scale=scale)
 
         hkl.dump(X, os.path.join(DATA_DIR, out_data_head + '_X_' + split + '.hkl'))
         hkl.dump(source_list, os.path.join(DATA_DIR, out_data_head + '_sources_' + split + '.hkl'))
 
 # resize and crop image
-def process_im(im, desired_sz):
+def process_im(im, desired_sz, scale=None):
     '''
     First step: 
     '''
     im_temp = im.copy()
-    if im.shape[0] / im.shape[1] > desired_sz[0] / desired_sz[1]:
-        target_ds = float(desired_sz[1])/im.shape[1]
-        im = imresize(im, (int(np.round(target_ds * im.shape[0])), desired_sz[1]))
-        d = int((im.shape[0] - desired_sz[0]) / 2)
-        im = im[d:d+desired_sz[0], :]
+    if im_temp.shape[0] / im_temp.shape[1] > desired_sz[0] / desired_sz[1]:
+        target_ds = float(desired_sz[1])/im_temp.shape[1]
+        im_temp = imresize(im_temp, (int(np.round(target_ds * im_temp.shape[0])), desired_sz[1]))
+        d = int((im_temp.shape[0] - desired_sz[0]) / 2)
+        im_temp = im_temp[d:d+desired_sz[0], :]
     else:
-        target_ds = float(desired_sz[0])/im.shape[0]
-        im = imresize(im, (desired_sz[0], int(np.round(target_ds * im.shape[1]))))
-        d = int((im.shape[1] - desired_sz[1]) / 2)
-        im = im[:, d:d+desired_sz[1]]
+        target_ds = float(desired_sz[0])/im_temp.shape[0]
+        im_temp = imresize(im_temp, (desired_sz[0], int(np.round(target_ds * im_temp.shape[1]))))
+        d = int((im_temp.shape[1] - desired_sz[1]) / 2)
+        im_temp = im_temp[:, d:d+desired_sz[1]]
 
-    return im
+    im_norm = cv2.normalize(im_temp, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype = cv2.CV_32F)
+    im_norm = im_norm.astype(np.uint8)
+
+    if not(scale is None):
+        im_norm = rescale_im(im_norm, scale=scale)
+
+    return im_norm
+
+
+def rescale_im(im, scale=1):
+    # create a black background
+    im_bg = np.zeros(im.shape, dtype=np.uint8)
+    scale_shape = (np.array(im.shape[:2] ) * scale).astype(np.uint8)
+    # resize the image
+    im_scale = imresize(im, size=tuple(scale_shape), interp='nearest')
+    # add the image to a gray background
+    center = np.array(im.shape[:2], dtype=np.uint8)//2
+    center_coner = center - np.array(scale_shape, dtype=np.uint8) // 2
+    im_bg[center_coner[0]: center_coner[0] + scale_shape[0], center_coner[1]: center_coner[1] + scale_shape[1], :] = im_scale
+    return im_bg
 
 if __name__ == '__main__':
     process_data()

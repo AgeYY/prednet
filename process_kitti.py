@@ -9,6 +9,7 @@ import urllib.request
 import numpy as np
 from imageio import imread
 from scipy.misc import imresize
+import cv2
 import hickle as hkl
 from kitti_settings import *
 

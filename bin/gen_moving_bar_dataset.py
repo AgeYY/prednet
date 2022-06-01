@@ -11,14 +11,14 @@ step = 12
 speed_list = range(1, 13) # step = 12, speed_list_max = 12 make sure the squre doesn't fall out of the image
 init_pos = [30, width//2]
 
-# create raw video
-ms = Moving_square(width=width)
-
+## create raw video
+#ms = Moving_square(width=width)
+#
 #size_rect=20
 #out_data_head = 'moving_bar' + str(size_rect)
 #ms.create_video_batch(init_pos=init_pos, speed=speed_list, step=step, size_rect=size_rect, category=out_data_head)
 #categories = [out_data_head]
-#impor.process_data(categories, out_data_head=out_data_head)
+#impor.process_data(categories, out_data_head=out_data_head, scale=1)
 
 #size_rect=20
 #out_data_head = 'moving_bar_bg_color'
@@ -74,13 +74,13 @@ category = out_data_head
 
 dg = Moving_dot()
 speed_list = np.linspace(0.02, 0.08, step)
+sf = 0.08
 
-dg.set_stim_obj(obj_name=out_data_head, contrast=1)
+dg.set_stim_obj(obj_name=out_data_head, size=50, sf=0.02)
 
 dg.create_video_batch(speed_list=speed_list, n_frame=step, category=out_data_head)
 categories = [out_data_head]
 impor.process_data(categories, out_data_head=out_data_head)
-
 
 #dg = Moving_dot()
 #speed_list = np.linspace(1, 8, step)

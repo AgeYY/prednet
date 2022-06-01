@@ -22,13 +22,15 @@ arg = parser.parse_args()
 out_data_head = arg.data_head
 nt = arg.nt
 
-output_mode = ['E0', 'E1', 'E2', 'E3']
-neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
-#output_mode = ['R0', 'R1', 'R2', 'R3']
-#neural_data_path = 'neural_moving_bar_R' + '.hkl'
+#output_mode = ['E0', 'E1', 'E2', 'E3']
+#neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
+output_mode = ['R0', 'R1', 'R2', 'R3']
+neural_data_path = 'neural_moving_bar_R' + '.hkl'
 geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
-cut0 = 2 # frames from cut_0 to cut
+cut0 = 4 # frames from cut_0 to cut
 cut = nt
+cut0_speed = 0
+cut_speed = nt
 n_com_procrustes = 3
 n_com_cos = 20
 
@@ -49,7 +51,7 @@ for geo_tool_method in geo_tool_method_list:
     if geo_tool_method == 'procrustes_curve_diff_time': n_com = n_com_procrustes
     else: n_com = n_com_cos
 
-    mean_dot[geo_tool_method], err_dot[geo_tool_method] = mani_analyzer.analyze(geo_tool_method=geo_tool_method, n_com=n_com)
+    mean_dot[geo_tool_method], err_dot[geo_tool_method] = mani_analyzer.analyze(geo_tool_method=geo_tool_method, n_com=n_com, cut0=cut0, cut=cut, cut0_speed=cut0_speed, cut_speed=cut_speed)
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(2, 2, sharex=True)

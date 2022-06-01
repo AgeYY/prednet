@@ -73,10 +73,10 @@ train_file = os.path.join(DATA_DIR, out_data_head + '_X_train.hkl')
 train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
 label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 
-output_mode = ['E0', 'E1', 'E2', 'E3']
-neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
-#output_mode = ['R0', 'R1', 'R2', 'R3']
-#neural_data_path = 'neural_moving_bar_R' + '.hkl'
+#output_mode = ['E0', 'E1', 'E2', 'E3']
+#neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
+output_mode = ['R0', 'R1', 'R2', 'R3']
+neural_data_path = 'neural_moving_bar_R' + '.hkl'
 cut = 7
 cut0_time=5 # the curvature of a trajectory is the mean from curvature from the cutoff frame to the end. Due to the cutoff, the curvature of artificial video is no longer the same as natural video, but the affect should be minor
 embed_method = 'pca'
