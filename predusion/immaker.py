@@ -228,7 +228,7 @@ class Moving_square(): # generate a moving square along the x direction
             if shape == 'rectangle':
                 draw.rectangle(rect_para, fill=color_rect)
             elif shape == 'arc':
-                draw.arc(curr_pos, shape_para['start'], shape_para['end'], fill=color_rect)
+                draw.arc(rect_para, shape_para['start'], shape_para['end'], fill=color_rect)
             elif shape == 'text':
                 draw.text(curr_pos, shape_para['text'], fill=color_rect)
 

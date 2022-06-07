@@ -27,11 +27,10 @@ nt = arg.nt
 output_mode = ['R0', 'R1', 'R2', 'R3']
 neural_data_path = 'neural_moving_bar_R' + '.hkl'
 geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
-geo_tool_method_list = ['cos_xt_xv']
-cut0 = 4 # frames from cut_0 to cut
+cut0 = 8 # frames from cut_0 to cut
 cut = nt
 cut0_speed = 0
-cut_speed = nt
+cut_speed = 12
 n_com_procrustes = 3
 n_com_cos = None
 
@@ -64,8 +63,8 @@ y_label['ratio_speed_time'] = 'var of speed / var of time'
 
 for i, method in enumerate(geo_tool_method_list):
     idx, idy = i//2, i%2
-    ax[idx, idy].scatter(range(-2, 4), mean_dot[method])
-    ax[idx, idy].errorbar(range(-2, 4), mean_dot[method], yerr=err_dot[method])
+    ax[idx, idy].scatter(range(-2, len(output_mode)), mean_dot[method])
+    ax[idx, idy].errorbar(range(-2, len(output_mode)), mean_dot[method], yerr=err_dot[method])
     ax[idx, idy].axhline(0, color='k', linestyle='--')
     ax[idx, idy].set_ylabel(y_label[method])
 

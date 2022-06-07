@@ -21,11 +21,11 @@ parser.add_argument('--json_file', default='prednet_kitti_model.json', type=str,
 arg = parser.parse_args()
 
 out_data_head = arg.data_head
-nt = arg.nt
+nt = arg.nt # number of time points
 weights_file = arg.weights_file
 json_file = arg.json_file
 
-batch_size = 10
+batch_size = nt # what is batch size?
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/' + weights_file)
 json_file = os.path.join(WEIGHTS_DIR, json_file)
@@ -51,14 +51,14 @@ X_train, label = train_generator.create_all(out_label=True)
 sub = Agent()
 sub.read_from_json(json_file, weights_file)
 #
-output = sub.output_multiple(X_train, output_mode=output_mode, batch_size=batch_size, is_upscaled=False)
+#output = sub.output_multiple(X_train, output_mode=output_mode, batch_size=batch_size, is_upscaled=False)
 
-##Check the prediction
-#import matplotlib.pyplot as plt
-#from predusion.ploter import Ploter
-#output = sub.output(X_train, output_mode='prediction', batch_size=batch_size, is_upscaled=False)
-#plter = Ploter()
-#fig, gs = plter.plot_seq_prediction(X_train[0], output[0])
-#plt.show()
+#Check the prediction
+import matplotlib.pyplot as plt
+from predusion.ploter import Ploter
+output = sub.output(X_train, output_mode='prediction', batch_size=batch_size, is_upscaled=False)
+plter = Ploter()
+fig, gs = plter.plot_seq_prediction(X_train[-1], output[-1])
+plt.show()
 
 hkl.dump(output, os.path.join(DATA_DIR, output_name))

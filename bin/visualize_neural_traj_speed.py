@@ -76,38 +76,40 @@ label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 #neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
 output_mode = ['R0', 'R1', 'R2', 'R3']
+output_mode = ['R0']
 neural_data_path = 'neural_moving_bar_R' + '.hkl'
 cut = 7
 cut0_time=5 # the curvature of a trajectory is the mean from curvature from the cutoff frame to the end. Due to the cutoff, the curvature of artificial video is no longer the same as natural video, but the affect should be minor
 embed_method = 'pca'
 n_components = 3
 align_delta = None
+speed_max = 6
 
 colorinfo_time = np.arange(cut0_time, cut) # temperal color scheme
-colorinfo_time = np.tile(colorinfo_time, (12, 1)).flatten()
-colorinfo_speed = np.tile(np.arange(1, 13), (cut - cut0_time, 1)).T.flatten()
+colorinfo_time = np.tile(colorinfo_time, (nt, 1)).flatten()
+colorinfo_speed = np.tile(np.arange(1, speed_max), (cut - cut0_time, 1)).T.flatten()
 
 train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction', shuffle=False)
 
 X_train, label = train_generator.create_all(out_label=True)
 speed_list = label
 
-neural_x = X_train[:, cut0_time:cut].reshape([12, cut - cut0_time, -1])
+neural_x = X_train[:, cut0_time:cut].reshape([speed_max, cut - cut0_time, -1])
 
 # rearange the neural speed
 ind = np.argsort(speed_list)
 neural_x = neural_x[ind]
-plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_time, title=out_data_head + '_' + embed_method + '_pixel_color_time', align_delta=align_delta)
+#plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_time, title=out_data_head + '_' + embed_method + '_pixel_color_time', align_delta=align_delta)
 plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_speed, title=out_data_head + '_' + embed_method + '_pixel_color_speed', align_delta=align_delta)
 
 neural_x_all = hkl.load(os.path.join(DATA_DIR, neural_data_path))
 for mode in output_mode:
-    neural_x = neural_x_all[mode][:, cut0_time:cut].reshape([12, cut - cut0_time, -1]) # (n_speed, n_time, features)
+    neural_x = neural_x_all[mode][:, cut0_time:cut].reshape([speed_max, cut - cut0_time, -1]) # (n_speed, n_time, features)
     # rearange the neural speed
     ind = np.argsort(speed_list)
     neural_x = neural_x[ind]
 
-    plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_time, title=out_data_head + '_' + embed_method + '_neuron_color_time_{}'.format(mode), align_delta=align_delta)
+    #plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_time, title=out_data_head + '_' + embed_method + '_neuron_color_time_{}'.format(mode), align_delta=align_delta)
     plot_dimension_reduction(neural_x, method=embed_method, n_components=n_components, colorinfo=colorinfo_speed, title=out_data_head + '_' + embed_method + '_neuron_color_speed_{}'.format(mode), align_delta=align_delta)
 
 
