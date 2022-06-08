@@ -55,10 +55,14 @@ sub.read_from_json(json_file, weights_file)
 
 #Check the prediction
 import matplotlib.pyplot as plt
+import numpy as np
 from predusion.ploter import Ploter
+
 output = sub.output(X_train, output_mode='prediction', batch_size=batch_size, is_upscaled=False)
+#idx = (np.array(label, dtype=int) == 12).nonzero()[0][0] # show square moving with speed = 12. This could be used to check the label
+idx = -1
 plter = Ploter()
-fig, gs = plter.plot_seq_prediction(X_train[-1], output[-1])
+fig, gs = plter.plot_seq_prediction(X_train[idx], output[idx])
 plt.show()
 
 hkl.dump(output, os.path.join(DATA_DIR, output_name))

@@ -398,6 +398,7 @@ class Moving_dot(Visual_stim_gen):
         label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed_list} # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
 
+
 if __name__ == '__main__':
 #    import matplotlib.pyplot as plt
 #
