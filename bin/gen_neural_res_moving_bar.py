@@ -25,7 +25,7 @@ nt = arg.nt # number of time points
 weights_file = arg.weights_file
 json_file = arg.json_file
 
-batch_size = nt # what is batch size?
+batch_size = None # number of predicting videos in each batch. Doesn't matter
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/' + weights_file)
 json_file = os.path.join(WEIGHTS_DIR, json_file)
@@ -35,7 +35,7 @@ label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 #output_name = 'neural_' + out_data_head + '_E' + '.hkl'
 output_mode = ['R0', 'R1', 'R2', 'R3']
-output_name = 'neural_moving_bar_R' + '.hkl'
+output_name = 'neural_' + out_data_head + '_R' + '.hkl'
 
 ##
 train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction', shuffle=False)
@@ -50,8 +50,10 @@ X_train, label = train_generator.create_all(out_label=True)
 
 sub = Agent()
 sub.read_from_json(json_file, weights_file)
-#
-#output = sub.output_multiple(X_train, output_mode=output_mode, batch_size=batch_size, is_upscaled=False)
+
+output = sub.output_multiple(X_train, output_mode=output_mode, batch_size=batch_size, is_upscaled=False)
+
+hkl.dump(output, os.path.join(DATA_DIR, output_name))
 
 #Check the prediction
 import matplotlib.pyplot as plt
@@ -65,4 +67,3 @@ plter = Ploter()
 fig, gs = plter.plot_seq_prediction(X_train[idx], output[idx])
 plt.show()
 
-hkl.dump(output, os.path.join(DATA_DIR, output_name))

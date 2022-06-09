@@ -15,23 +15,23 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_head', default='moving_bar', type=str,
                     help='head of the dataset')
-parser.add_argument('--nt', default=12, type=int,
-                    help='number of frames per video')
+parser.add_argument('--nt', default=12, type=int, help='number of frames per video')
+parser.add_argument('--cut_time', nargs=2, default=None, type=int, help='analyze the geometric property only limit with this time interval. unit is frame')
+parser.add_argument('--cut_speed', nargs=2, default=None, type=int, help='analyze the geometric property only limit with this speed interval. unit is the rank of speeds, from lowest to the highest')
+parser.add_argument('--n_com_procrustes', default=3, type=int, help='number of dimensions for procrustes (comparing the shape similarity across different time points.)')
+
 arg = parser.parse_args()
 
 out_data_head = arg.data_head
+cut_time = arg.cut_time
+n_com_procrustes = arg.n_com_procrustes
 nt = arg.nt
 
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 #neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
 output_mode = ['R0', 'R1', 'R2', 'R3']
-neural_data_path = 'neural_moving_bar_R' + '.hkl'
+neural_data_path = 'neural_' + out_data_head + '_R' + '.hkl'
 geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
-cut0 = 8 # frames from cut_0 to cut
-cut = nt
-cut0_speed = 0
-cut_speed = 12
-n_com_procrustes = 3
 n_com_cos = None
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
@@ -51,7 +51,7 @@ for geo_tool_method in geo_tool_method_list:
     if geo_tool_method == 'procrustes_curve_diff_time': n_com = n_com_procrustes
     else: n_com = n_com_cos
 
-    mean_dot[geo_tool_method], err_dot[geo_tool_method] = mani_analyzer.analyze(geo_tool_method=geo_tool_method, n_com=n_com, cut0=cut0, cut=cut, cut0_speed=cut0_speed, cut_speed=cut_speed)
+    mean_dot[geo_tool_method], err_dot[geo_tool_method] = mani_analyzer.analyze(geo_tool_method=geo_tool_method, n_com=n_com, cut0=cut_time[0], cut=cut_time[1])
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(2, 2, sharex=True)

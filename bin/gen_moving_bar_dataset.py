@@ -41,7 +41,7 @@ video = hkl.load(natural_video_path)
 dg.moving_square_on_video(video, size_rect=size_rect, time_step=time_step, out_data_head=out_data_head, speed_list=speed_list)
 
 out_data_head = 'grating_stim'
-speed_list = np.linspace(0.02, 0.08, 12)
+speed_list = np.linspace(0.02, 0.12, 12)
 scale=None
 sf = 0.02
 dg.grating_stim(sf=sf, time_step=time_step, out_data_head=out_data_head, speed_list=speed_list, scale=scale)
