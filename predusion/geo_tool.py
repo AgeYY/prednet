@@ -43,7 +43,6 @@ def cos_para_layer(neural_x, error_bar='std'):
     calculate the mean and se (or std) of one layer
     input:
       neural_x ([n_speed, n_time, feature])
-
     '''
     # calculate the different along the temporal direction
     #neural_x_speed = np.gradient(neural_x, axis=0)
@@ -153,7 +152,7 @@ def dim_manifold(neural_x, error_bar='std', n_com_max=None, print_message=False,
 
         for j, var_exp in enumerate(var_explained):
             if var_exp > thresh: break
-        dim.append(j)
+        dim.append(j + 1)
 
     if error_bar=='std':
         err = np.std(dim)

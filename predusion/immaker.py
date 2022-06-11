@@ -223,7 +223,10 @@ class Moving_square(): # generate a moving square along the x direction
             im_temp = self.im_bag.copy()
             draw = ImageDraw.Draw(im_temp)
             curr_pos = (self.init_pos[0] + self.speed * i, self.init_pos[1]) # moving along the x direction
-            rect_para = (curr_pos[0] - self.size_rect // 2, curr_pos[1] - self.size_rect // 2, curr_pos[0] + self.size_rect // 2, curr_pos[1] + self.size_rect // 2) # initial position
+            if np.array(self.size_rect).shape == (): # if size_rect is a scalar
+                rect_para = (curr_pos[0] - self.size_rect // 2, curr_pos[1] - self.size_rect // 2, curr_pos[0] + self.size_rect // 2, curr_pos[1] + self.size_rect // 2) # initial position
+            else: # size_rect is (width, length)
+                rect_para = (curr_pos[0] - self.size_rect[0] // 2, curr_pos[1] - self.size_rect[1] // 2, curr_pos[0] + self.size_rect[0] // 2, curr_pos[1] + self.size_rect[1] // 2) # initial position
 
             if shape == 'rectangle':
                 draw.rectangle(rect_para, fill=color_rect)

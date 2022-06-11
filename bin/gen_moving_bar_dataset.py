@@ -7,11 +7,15 @@ import hickle as hkl
 import numpy as np
 from predusion.speed_data_generator import Dataset_generator
 
-speed_list = range(1, 13) # step = 12, speed_list_max = 12 make sure the squre doesn't fall out of the image
+speed_list = range(1, 13) # step = 12, speed_list_max = 13 make sure the squre doesn't fall out of the image
 size_rect=20
 time_step = 12
 
 dg = Dataset_generator()
+
+width, length = 20, 80
+out_data_head = 'moving_rect' + str(width) + str(length)
+dg.moving_square(size_rect=(width, length), out_data_head=out_data_head, speed_list=speed_list, time_step=time_step)
 
 out_data_head = 'moving_bar' + str(size_rect)
 dg.moving_square(size_rect=size_rect, out_data_head=out_data_head, speed_list=speed_list, time_step=time_step)

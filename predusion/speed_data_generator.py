@@ -11,7 +11,7 @@ class Dataset_generator():
         '''
         input:
           width (int): the shape of each frame is width * width. The width should be larger than the input of the predent
-          size_rect (int): size of the square
+          size_rect (int, or (width, length)): size of the square
           time_step (int): the number of frames contained in one movie
           init_pos (list of int): initial position of the square
           scale (float): move the video to the center of each frame with width equal to int(width * scale)

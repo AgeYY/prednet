@@ -44,6 +44,7 @@ def align_data(data, delta):
 def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2, title='', n_neighbors=2, align_delta=None):
     '''
     data ([sample, feature])
+    n_component (int): 2 or 3 dimension visualization
     '''
     data = align_data(data, align_delta)
     if method=='mds':
@@ -58,14 +59,37 @@ def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2,
     data_transformed = embedding.fit_transform(data.reshape([-1, data.shape[-1]]))
 
     fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
 
-    if not (colorinfo is None):
-        im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False)
-        fig.colorbar(im, cax = cax, orientation = 'horizontal')
-    else:
-        im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], depthshade=False)
+    if n_components == 2:
+        ax = plt.axes()
+        cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
+
+        if not (colorinfo is None):
+            im = ax.scatter(data_transformed[:, 0], data_transformed[:, 1], c=colorinfo.flatten(), cmap = "viridis")
+            fig.colorbar(im, cax = cax, orientation = 'horizontal')
+        else:
+            im = ax.scatter(data_transformed[:, 0], data_transformed[:, 1])
+
+    elif n_components == 3:
+        ax = plt.axes(projection='3d')
+        cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
+
+        if not (colorinfo is None):
+            im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False)
+            fig.colorbar(im, cax = cax, orientation = 'horizontal')
+        else:
+            im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], depthshade=False)
+            #max_val = np.max(data_transformed[:, 0])
+            #max_val = max(np.max(data_transformed[:, 1]), max_val)
+            #max_val = max(np.max(data_transformed[:, 2]), max_val)
+
+            #min_val = np.min(data_transformed[:, 0])
+            #min_val = min(np.min(data_transformed[:, 1]), min_val)
+            #min_val = min(np.min(data_transformed[:, 2]), min_val)
+
+            #ax.axes.set_xlim3d(left=min_val, right=max_val) 
+            #ax.axes.set_ylim3d(bottom=min_val, top=max_val) 
+            #ax.axes.set_zlim3d(bottom=min_val, top=max_val) 
 
     plt.title(title)
     plt.savefig('./figs/' + title + '.pdf')
