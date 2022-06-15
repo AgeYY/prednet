@@ -136,7 +136,7 @@ def align_data(data, delta):
     shift_neural_x = np.tile(np.expand_dims(delta_data, axis=0), (12, 1 , 1))
     return data - shift_neural_x
 
-def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2, title='', n_neighbors=2, align_delta=None, save_fig=True, ax=None, fig=None):
+def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2, title='', n_neighbors=2, align_delta=None, save_fig=True, ax=None, fig=None, cax=None):
     '''
     data ([sample, feature])
     n_component (int): 2 or 3 dimension visualization
@@ -170,6 +170,8 @@ def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2,
     elif n_components == 3:
         if ax is None:
             ax = plt.axes(projection='3d')
+
+        if cax is None:
             cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
 
         if not (colorinfo is None):

@@ -3,12 +3,18 @@
 # a demo to train the mlp
 # feed the input to mlp
 # quickly see the geometry of mlp
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from predusion.ploter import plot_dimension_reduction
 from torch.utils.data import Dataset, DataLoader
 import torch
+import torch.nn as nn
+import torch.optim as optim
 from predusion.mlp_agent import MLP
+from predusion.mlp_trainer import train
+from kitti_settings import *
+
 
 class Cylinder_dataset(Dataset):
     def __init__(self, length=10000, r=1, transform=None, to_torch=False):
@@ -53,11 +59,6 @@ class Cylinder_dataset(Dataset):
         fea_map[:, 2] = z
         return fea_map
 
-n_sample = 1000
-r = 1
-dataset = Cylinder_dataset(length=n_sample, r=r, to_torch=True)
-dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
-
 ### show the input geometry
 #sample = dataset[:]
 #
@@ -70,20 +71,64 @@ dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
 
 INPUT_DIM = 3
 OUTPUT_DIM = 2
+n_layers = 4 # input, layer 1, ... exclude the output prediction only
+tot_title = 'Untrained MLP'
 
+r = 1
+
+train_ratio = 0.8
+n_epoch = 20
+n_sample = 1000
+model_path = os.path.join(WEIGHTS_DIR, 'mlp_cylinder.pt')  # where weights will be saved
+
+
+dataset = Cylinder_dataset(length=n_sample, r=r, to_torch=True)
+train_len = int(len(dataset) * train_ratio)
+test_len = len(dataset) - train_len
+train_set, test_set = torch.utils.data.random_split(dataset, [train_len, test_len])
+
+train_iterator = DataLoader(train_set, batch_size=8, shuffle=True)
+
+# train the MLP
 model = MLP(INPUT_DIM, OUTPUT_DIM)
 
+optimizer = optim.Adam(model.parameters())
+criterion = nn.MSELoss()
+#criterion = loss_cylinder
+
+for i in range(n_epoch):
+    train_loss = train(model, train_iterator, optimizer, criterion)
+    torch.save(model.state_dict(), model_path)
+
+    print(train_loss)
+
+# visualize the feature map
 feamap = model.feature_map(dataset[:]['X'])
 theta = dataset[:]['theta'].cpu().detach().numpy()
 z = dataset[:]['z'].cpu().detach().numpy()
 
-#print(feamap['h1'].shape)
+fig = plt.figure(figsize=(15, 8))
+
+cax1 = fig.add_axes([0.27, 0.95, 0.5, 0.05])
+cax2 = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+
+i = 0
 for key in feamap:
     if key == 'y_pred':
         continue
     title = 'mlp_cylinder_color_theta_' + key
-    fig, ax = plot_dimension_reduction(feamap[key].cpu().detach().numpy(), method='pca', n_components=3, title=title, colorinfo=theta)
 
+    ax1 = fig.add_subplot(2, n_layers, i + 1, projection='3d')
+
+    fig, ax = plot_dimension_reduction(feamap[key].cpu().detach().numpy(), method='pca', n_components=3, title=title, colorinfo=theta, fig=fig, ax=ax1, cax=cax1)
+
+    ax2 = fig.add_subplot(2, n_layers, i + 1 + n_layers, projection='3d')
     title = 'mlp_cylinder_color_z_' + key
-    fig, ax = plot_dimension_reduction(feamap[key].cpu().detach().numpy(), method='pca', n_components=3, title=title, colorinfo=z)
+    fig, ax = plot_dimension_reduction(feamap[key].cpu().detach().numpy(), method='pca', n_components=3, title=title, colorinfo=z, fig=fig, ax=ax2, cax=cax2)
+
+    i += 1
+
+fig.savefig('./figs/' + tot_title + '.pdf')
+
+plt.show()
 
