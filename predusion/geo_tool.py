@@ -2,6 +2,56 @@ import numpy as np
 from scipy.spatial import procrustes
 from sklearn.decomposition import PCA
 
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    """ Code contributed from https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python
+    Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) / np.pi * 180
+
+def shift_mean(neural_x, avg_axis=0):
+    '''
+    shift the mean of manifolds to 0
+    '''
+    n_manifold = neural_x.shape[avg_axis]
+    mean_manifold = np.mean(neural_x, axis=avg_axis) # array, each element is the mean of speed manifold across different speeds at a particular time point
+    mean_manifold = np.expand_dims(mean_manifold, axis=avg_axis)
+    repeat_list = [1] * len(neural_x.shape)
+    repeat_list[avg_axis] = n_manifold
+    mean_manifold = np.tile(mean_manifold, repeat_list)
+    return neural_x - mean_manifold
+
+def angle_PC(neural_x, error_bar='std'):
+
+    neural_x_time = shift_mean(neural_x, avg_axis=1)
+    neural_x_speed = shift_mean(neural_x, avg_axis = 0)
+    #print(neural_x_time.shape)
+
+    # collecting all tangent vectors
+    neural_x_time_flat = neural_x_time.reshape((-1, neural_x_time.shape[-1]))
+    neural_x_speed_flat = neural_x_speed.reshape((-1, neural_x_speed.shape[-1]))
+
+    pca = PCA(n_components=1)
+    pca.fit_transform(neural_x_time_flat)
+    time_pc = pca.components_[0]
+    pca.fit_transform(neural_x_speed_flat)
+    speed_pc = pca.components_[0]
+
+    return angle_between(time_pc, speed_pc), 0
+
+
 def cos_xt_xv(neural_x, error_bar='std'):
     '''
     calculate the mean and se (or std) of one layer. The cos value of two tangent vectors in the same point
