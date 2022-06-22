@@ -69,6 +69,164 @@ class Ploter():
             plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
         return fig, gs
 
+class Ploter_dim_reduction():
+    def __init__(self, method='mds', n_neighbors=2):
+        n_components = 3
+        if method=='mds':
+            self.embedding = MDS(n_components=n_components)
+        elif method=='lle':
+            self.embedding = LocallyLinearEmbedding(n_components=n_components)
+        elif method=='isomap':
+            self.embedding = Isomap(n_components=n_components, n_neighbors=n_neighbors)
+        elif method=='pca':
+            self.embedding = PCA(n_components=n_components)
+
+    def fit(self, data, label=None):
+        '''
+        data ([sample, feature])
+        n_component (int): 2 or 3 dimension visualization
+        label ([sample, n_label]): required when the method is pls
+        '''
+        return self.embedding.fit(data)
+
+    def transform(self, data):
+        '''
+        data ([sample, feature])
+        '''
+        return self.embedding.transform(data)
+
+    def fit_transform(data):
+        return self.embedding.fit_transform(data)
+
+    def plot_dimension_reduction(self, data, colorinfo=None, title=None, save_fig=None, ax=None, fig=None, cax=None, fit=False, mode='2D'):
+        '''
+        data ( [n_sample, n_feature])
+        label ( [n_sample] )
+        save_fig (str): the path for saving figure
+        fit (bool): refit the data, or use the fitted embedding
+        mode (str): 2D or 3D
+        '''
+        if fit:
+            data_trans = self.fit_transform(data)
+        else:
+            data_trans = self.transform(data)
+
+        if fig is None:
+            fig = plt.figure()
+
+        if mode == '2D':
+            if ax is None:
+                ax = fig.add_axes()
+
+            if cax is None:
+                cax = fig.add_axes([0.27, 0.8, 0.5, 0.05]) # colorbar
+
+            if not (colorinfo is None):
+                im = ax.scatter(data_trans[:, 0], data_trans[:, 1], c=colorinfo.flatten(), cmap="viridis")
+                fig.colorbar(im, cax=cax, orientation = 'horizontal')
+            else:
+                im = ax.scatter(data_trans[:, 0], data_trans[:, 1])
+
+        elif mode == '3D':
+            if ax is None:
+                ax = plt.axes(projection='3d')
+
+            if cax is None:
+                cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
+
+            if not (colorinfo is None):
+                im = ax.scatter3D(data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False)
+                fig.colorbar(im, cax = cax, orientation = 'horizontal')
+            else:
+                im = ax.scatter3D(data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], depthshade=False)
+
+        ax.set_title(title)
+        if not (save_fig is None):
+            fig.savefig(save_fig)
+        return fig, ax
+
+    def add_line(self, line, ax, mode='2D', **kwargs):
+        '''
+        add a line to ax after plot_dimension_reduction. mode must be the same as plot_dim_reduction
+        line ([2, n_features]): the first raw is the initial point, second row is the final one
+        '''
+        line_trans = self.embedding.transform(line)
+        line_trans = line_trans - line_trans[0, :] # shift to the origin of the PC
+        #xlow, xhigh = ax.get_xlim()
+        #tangent = (line_trans[1, 1] - line_trans[1, 0]) / (line_trans[0, 1] - line_trans[0, 0])
+        #line_trans[0, 0], line_trans[1, 0] = xlow, xhigh
+        #line_trans[0, 1], line_trans[1, 1] = xlow * tangent, xhigh * tangent
+
+        if mode == '2D':
+            ax.plot(line_trans[:, 0], line_trans[:, 1], **kwargs)
+        elif mode == '3D':
+            ax.plot(line_trans[:, 0], line_trans[:, 1], line_trans[:, 2], **kwargs)
+        return ax
+
+def align_data(data, delta):
+    '''
+    align the mean of different information manifolds to a line
+    '''
+    if delta is None:
+        return data
+
+    line = np.zeros(data.shape[1:])
+    line[:, 0] = delta * np.arange(data.shape[1])
+    data_mean = np.mean(data, axis=0)
+    delta_data = data_mean - line
+    shift_neural_x = np.tile(np.expand_dims(delta_data, axis=0), (12, 1 , 1))
+    return data - shift_neural_x
+
+def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2, title='', n_neighbors=2, align_delta=None, save_fig=True, ax=None, fig=None, cax=None):
+    '''
+    data ([sample, feature])
+    n_component (int): 2 or 3 dimension visualization
+    '''
+    data = align_data(data, align_delta)
+    if method=='mds':
+        embedding = MDS(n_components=n_components)
+    elif method=='lle':
+        embedding = LocallyLinearEmbedding(n_components=n_components)
+    elif method=='isomap':
+        embedding = Isomap(n_components=n_components, n_neighbors=n_neighbors)
+    elif method=='pca':
+        embedding = PCA(n_components=n_components)
+
+    data_transformed = embedding.fit_transform(data.reshape([-1, data.shape[-1]]))
+
+    if fig is None:
+        fig = plt.figure()
+
+    if n_components == 2:
+        if ax is None:
+            ax = fig.add_axes()
+
+        if cax is None:
+            cax = fig.add_axes([0.27, 0.8, 0.5, 0.05]) # colorbar
+
+        if not (colorinfo is None):
+            im = ax.scatter(data_transformed[:, 0], data_transformed[:, 1], c=colorinfo.flatten(), cmap="viridis")
+            fig.colorbar(im, cax=cax, orientation = 'horizontal')
+        else:
+            im = ax.scatter(data_transformed[:, 0], data_transformed[:, 1])
+
+    elif n_components == 3:
+        if ax is None:
+            ax = plt.axes(projection='3d')
+
+        if cax is None:
+            cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
+
+        if not (colorinfo is None):
+            im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False)
+            fig.colorbar(im, cax = cax, orientation = 'horizontal')
+        else:
+            im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], depthshade=False)
+
+    ax.set_title(title)
+    if save_fig:
+        fig.savefig('./figs/' + title + '.pdf')
+    return fig, ax
 ##### Plot out colorbar
 #import matplotlib.gridspec as gridspec
 #
@@ -121,66 +279,3 @@ if __name__ == '__main__':
     seq_pred = sub.output(seq_repeat)
     fig, gs = Ploter().plot_seq_prediction(seq_repeat[0], seq_pred[0])
     plt.show()
-
-def align_data(data, delta):
-    '''
-    align the mean of different information manifolds to a line
-    '''
-    if delta is None:
-        return data
-
-    line = np.zeros(data.shape[1:])
-    line[:, 0] = delta * np.arange(data.shape[1])
-    data_mean = np.mean(data, axis=0)
-    delta_data = data_mean - line
-    shift_neural_x = np.tile(np.expand_dims(delta_data, axis=0), (12, 1 , 1))
-    return data - shift_neural_x
-
-def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2, title='', n_neighbors=2, align_delta=None, save_fig=True, ax=None, fig=None, cax=None):
-    '''
-    data ([sample, feature])
-    n_component (int): 2 or 3 dimension visualization
-    '''
-    data = align_data(data, align_delta)
-    if method=='mds':
-        embedding = MDS(n_components=n_components)
-    elif method=='lle':
-        embedding = LocallyLinearEmbedding(n_components=n_components)
-    elif method=='isomap':
-        embedding = Isomap(n_components=n_components, n_neighbors=n_neighbors)
-    elif method=='pca':
-        embedding = PCA(n_components=n_components)
-
-    data_transformed = embedding.fit_transform(data.reshape([-1, data.shape[-1]]))
-
-    if fig is None:
-        fig = plt.figure()
-
-    if n_components == 2:
-        if ax is None:
-            ax = fig.add_axes()
-        cax = fig.add_axes([0.27, 0.8, 0.5, 0.05]) # colorbar
-
-        if not (colorinfo is None):
-            im = ax.scatter(data_transformed[:, 0], data_transformed[:, 1], c=colorinfo.flatten(), cmap = "viridis")
-            fig.colorbar(im, cax = cax, orientation = 'horizontal')
-        else:
-            im = ax.scatter(data_transformed[:, 0], data_transformed[:, 1])
-
-    elif n_components == 3:
-        if ax is None:
-            ax = plt.axes(projection='3d')
-
-        if cax is None:
-            cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
-
-        if not (colorinfo is None):
-            im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False)
-            fig.colorbar(im, cax = cax, orientation = 'horizontal')
-        else:
-            im = ax.scatter3D(data_transformed[:, 0], data_transformed[:, 1], data_transformed[:, 2], depthshade=False)
-
-    ax.set_title(title)
-    if save_fig:
-        fig.savefig('./figs/' + title + '.pdf')
-    return fig, ax

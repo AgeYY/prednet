@@ -3,19 +3,29 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 
 class Surface_dataset(Dataset):
-    def __init__(self, length=10000, shape='cylinder', transform=None, to_torch=False, **geo_kward):
+    def __init__(self, length=10000, shape='cylinder', transform=None, to_torch=False, lt=None, **geo_kward):
         '''
         transform function acts on the numpy data, then converted to torch if to_torch is true
+        lt (dict {'lt1': [0, 1, 2, ...], 'lt2': [-0.2, 0, 2.0]}): the whole dataset would be generated from label_data0 = (lt1[0], lt2[0]), label_data1 = (lt1[1], lt2[1])
         '''
         self.length = length
 
         if shape == 'cylinder':
-            lt1 = np.random.uniform(0, 2 * np.pi, length)
-            lt2 = np.random.uniform(-1, 1, length)
+            if lt is None:
+                lt1 = np.random.uniform(0, 2 * np.pi, length)
+                lt2 = np.random.uniform(-1, 1, length)
+            else:
+                lt1 = lt['lt1']
+                lt2 = lt['lt2']
+
             X = self.cylinder(lt1, lt2, **geo_kward)
         elif shape == 'helicoid':
-            lt1 = np.random.uniform(0, 3 * np.pi, length)
-            lt2 = np.random.uniform(0, 2, length)
+            if lt is None:
+                lt1 = np.random.uniform(0, 2 * np.pi, length)
+                lt2 = np.random.uniform(-1, 1, length)
+            else:
+                lt1 = lt['lt1']
+                lt2 = lt['lt2']
             X = self.helicoid(lt1, lt2, **geo_kward)
 
         self.x_key = 'X'

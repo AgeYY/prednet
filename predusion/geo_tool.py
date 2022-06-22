@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial import procrustes
 from sklearn.decomposition import PCA
-from sklearn.cross_decomposition import PLSCanonical
+from sklearn.cross_decomposition import PLSCanonical, PLSRegression
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
@@ -43,7 +43,8 @@ def angle_PC(neural_x, label, error_bar='std'):
     lt0 = label[:, [0]]
     lt1 = label[:, [1]]
 
-    pls = PLSCanonical(n_components=1)
+    #pls = PLSCanonical(n_components=1)
+    pls = PLSRegression(n_components=1)
     pls.fit(neural_x, lt0)
     pls_lt0 = pls.x_weights_[:, 0]
     pls.fit(neural_x, lt1)
@@ -86,7 +87,6 @@ def angle_PC_grid(neural_x, error_bar='std'):
     speed_pc = pca.components_[0]
 
     return angle_between(time_pc, speed_pc), 0
-
 
 def cos_xt_xv(neural_x, error_bar='std'):
     '''
