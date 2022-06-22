@@ -72,15 +72,20 @@ i = 0
 for key in feamap:
     if key == 'y_pred':
         continue
+
+    feamap_key = feamap[key].cpu().detach().numpy()
+    # calculate the angle
+
+    # visualization
     title = 'mlp_color_lt1_' + key
 
     ax1 = fig.add_subplot(2, n_layers, i + 1, projection='3d')
 
-    fig, ax = plot_dimension_reduction(feamap[key].cpu().detach().numpy(), method='pca', n_components=3, title=title, colorinfo=theta, fig=fig, ax=ax1, cax=cax1)
+    fig, ax = plot_dimension_reduction(feamap_key, method='pca', n_components=3, title=title, colorinfo=theta, fig=fig, ax=ax1, cax=cax1)
 
     ax2 = fig.add_subplot(2, n_layers, i + 1 + n_layers, projection='3d')
     title = 'mlp_color_lt2_' + key
-    fig, ax = plot_dimension_reduction(feamap[key].cpu().detach().numpy(), method='pca', n_components=3, title=title, colorinfo=z, fig=fig, ax=ax2, cax=cax2)
+    fig, ax = plot_dimension_reduction(feamap_key, method='pca', n_components=3, title=title, colorinfo=z, fig=fig, ax=ax2, cax=cax2)
 
     i += 1
 

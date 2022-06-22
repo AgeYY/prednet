@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial import procrustes
 from sklearn.decomposition import PCA
+from sklearn.cross_decomposition import PLSCanonical
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
@@ -19,7 +20,8 @@ def angle_between(v1, v2):
     """
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) / np.pi * 180
+    angle = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)) / np.pi * 180
+    return np.minimum(angle, 180-angle)
 
 def shift_mean(neural_x, avg_axis=0):
     '''
@@ -33,7 +35,41 @@ def shift_mean(neural_x, avg_axis=0):
     mean_manifold = np.tile(mean_manifold, repeat_list)
     return neural_x - mean_manifold
 
-def angle_PC(neural_x, error_bar='std'):
+def angle_PC(neural_x, label, error_bar='std'):
+    '''
+    nerual_x ([n_sample, n_feature]): neural response
+    label ([n_sample, n_labels = 2]):
+    '''
+    lt0 = label[:, [0]]
+    lt1 = label[:, [1]]
+
+    pls = PLSCanonical(n_components=1)
+    pls.fit(neural_x, lt0)
+    pls_lt0 = pls.x_weights_[:, 0]
+    pls.fit(neural_x, lt1)
+    pls_lt1 = pls.x_weights_[:, 0]
+
+    return angle_between(pls_lt0, pls_lt1), 0
+
+def angle_PC_grid(neural_x, error_bar='std'):
+
+    #label_speed = np.arange(neural_x.shape[0])
+    #label_time = np.arange(neural_x.shape[1])
+    #label_speed, label_time = np.meshgrid(label_speed, label_time)
+
+    #neural_x_flat = neural_x.reshape((-1, neural_x.shape[-1]))
+    #label_speed = label_speed.reshape((-1, 1))
+    #label_time = label_time.reshape((-1, 1))
+
+    #pls = PLSCanonical(n_components=1)
+    #pls.fit(neural_x_flat, label_speed)
+    #speed_pls = pls.x_weights_[:, 0]
+
+    #pls = PLSCanonical(n_components=1)
+    #pls.fit(neural_x_flat, label_time)
+    #time_pls = pls.x_weights_[:, 0]
+
+    #return angle_between(time_pls, speed_pls), 0
 
     neural_x_time = shift_mean(neural_x, avg_axis=1)
     neural_x_speed = shift_mean(neural_x, avg_axis = 0)

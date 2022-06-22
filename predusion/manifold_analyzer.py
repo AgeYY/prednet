@@ -67,8 +67,8 @@ class Manifold_analyzer():
             elif geo_tool_method == 'ratio_speed_time':
                 neural_x = geo_tool.pca_reduce(neural_x, n_components=n_com) # processing
                 mean_dot_layer, err_dot_layer = geo_tool.ratio_speed_time(neural_x)
-            elif geo_tool_method == 'angle_PC':
-                mean_dot_layer, err_dot_layer = geo_tool.angle_PC(neural_x)
+            elif geo_tool_method == 'angle_PC_grid':
+                mean_dot_layer, err_dot_layer = geo_tool.angle_PC_grid(neural_x)
 
             self.mean_dot.append(mean_dot_layer)
             self.err_dot.append(err_dot_layer)
