@@ -30,7 +30,7 @@ nt = 12
 weights_file = 'prednet_kitti_weights.hdf5'
 json_file = 'prednet_kitti_model.json'
 
-cut_time_geo = [5, nt] # analyze the geometric property only limit with this time interval. unit is frame
+cut_time_geo = [3, nt] # analyze the geometric property only limit with this time interval. unit is frame
 n_com_procrustes = 3
 
 embed_method = 'pca'
@@ -38,5 +38,5 @@ cut_time_visual = [0, nt] # analyze the geometric property only limit with this 
 
 for out_data_head in out_data_head_list:
     #os.system('python ./bin/gen_neural_res_moving_bar.py --data_head ' + out_data_head + ' --nt ' + str(nt) + ' --weights_file ' + weights_file + ' --json_file ' + json_file)
-    #os.system('python ./bin/moving_bar_geo.py --data_head ' + out_data_head + ' --nt ' + str(nt) + ' --cut_time ' + str(cut_time_geo[0]) + ' ' + str(cut_time_geo[1]) + ' --n_com_procrustes ' + str(n_com_procrustes))
-    os.system('python ./bin/visualize_neural_traj_speed.py --data_head ' + out_data_head + ' --nt ' + str(nt) + ' --cut_time ' + str(cut_time_visual[0]) + ' ' + str(cut_time_visual[1]) + ' --embed_method ' + embed_method)
+    os.system('python ./bin/moving_bar_geo.py --data_head ' + out_data_head + ' --nt ' + str(nt) + ' --cut_time ' + str(cut_time_geo[0]) + ' ' + str(cut_time_geo[1]) + ' --n_com_procrustes ' + str(n_com_procrustes))
+    #os.system('python ./bin/visualize_neural_traj_speed.py --data_head ' + out_data_head + ' --nt ' + str(nt) + ' --cut_time ' + str(cut_time_visual[0]) + ' ' + str(cut_time_visual[1]) + ' --embed_method ' + embed_method)

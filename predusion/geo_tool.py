@@ -40,53 +40,86 @@ def angle_PC(neural_x, label, error_bar='std'):
     nerual_x ([n_sample, n_feature]): neural response
     label ([n_sample, n_labels = 2]):
     '''
-    lt0 = label[:, [0]]
-    lt1 = label[:, [1]]
+    from sklearn.model_selection import train_test_split
 
-    #pls = PLSCanonical(n_components=1)
+    neural_x_train, neural_x_test, label_train, label_test = train_test_split(neural_x, label, test_size=0.3)
+
+    lt0_train = label_train[:, [0]]
+    lt1_train = label_train[:, [1]]
+
     pls = PLSRegression(n_components=1)
-    pls.fit(neural_x, lt0)
+    pls.fit(neural_x_train, lt0_train)
+
+    score = pls.score(neural_x_test, label_test[:, [0]])
+    print('score: ', score)
+
     pls_lt0 = pls.x_weights_[:, 0]
-    pls.fit(neural_x, lt1)
+
+    pls.fit(neural_x_train, lt1_train)
     pls_lt1 = pls.x_weights_[:, 0]
 
     return angle_between(pls_lt0, pls_lt1), 0
 
-def angle_PC_grid(neural_x, error_bar='std'):
+#def angle_PC_grid(neural_x, error_bar='std'):
+#
+#    #neural_x = np.random.normal(scale=1, size=neural_x.shape)
+#    label_speed = np.arange(neural_x.shape[0])
+#    label_time = np.arange(neural_x.shape[1])
+#    label_speed, label_time = np.meshgrid(label_speed, label_time)
+#    label_speed, label_time = label_speed.T, label_time.T
+#
+#    neural_x_flat = neural_x.reshape((-1, neural_x.shape[-1]))
+#    label_speed = label_speed.reshape((-1, 1))
+#    label_time = label_time.reshape((-1, 1))
+#
+#    pls = PLSRegression(n_components=1)
+#    pls.fit(neural_x_flat, label_speed)
+#    speed_pls = pls.x_weights_[:, 0]
+#
+#    pls = PLSRegression(n_components=1)
+#    pls.fit(neural_x_flat, label_time)
+#    time_pls = pls.x_weights_[:, 0]
+#
+#    return angle_between(time_pls, speed_pls), 0
+#
+#    #neural_x_proj = np.tensordot(neural_x, speed_pls, axes=([-1, -1]))
+#    ##neural_x_proj = np.tensordot(neural_x, time_pls, axes=([-1, -1]))
+#    ##print(neural_x_proj.shape)
+#    #print(neural_x_proj)
+#    #e_v_var_t = np.mean( np.var(neural_x_proj, axis=1) )
+#    #e_t_var_v = np.mean( np.var(neural_x_proj, axis=0) )
+#
+#    #return e_v_var_t / e_t_var_v, 0
+#    ##return e_t_var_v / e_v_var_t, 0
+#
+#    #neural_x_time = shift_mean(neural_x, avg_axis=1)
+#    #neural_x_speed = shift_mean(neural_x, avg_axis = 0)
+#    ##print(neural_x_time.shape)
+#
+#    ## collecting all tangent vectors
+#    #neural_x_time_flat = neural_x_time.reshape((-1, neural_x_time.shape[-1]))
+#    #neural_x_speed_flat = neural_x_speed.reshape((-1, neural_x_speed.shape[-1]))
+#
+#    #pca = PCA(n_components=1)
+#    #pca.fit_transform(neural_x_time_flat)
+#    #time_pc = pca.components_[0]
+#    #pca.fit_transform(neural_x_speed_flat)
+#    #speed_pc = pca.components_[0]
+#
+#    #return angle_between(time_pc, speed_pc), 0
 
-    #label_speed = np.arange(neural_x.shape[0])
-    #label_time = np.arange(neural_x.shape[1])
-    #label_speed, label_time = np.meshgrid(label_speed, label_time)
+def var_on_pls_grid(neural_x, label_0, label_1, error_bar='std'):
+    '''
+    nerual_x ([n_sample, n_feature]): neural response
+    '''
+    lt0 = label[:, [0]]
 
-    #neural_x_flat = neural_x.reshape((-1, neural_x.shape[-1]))
-    #label_speed = label_speed.reshape((-1, 1))
-    #label_time = label_time.reshape((-1, 1))
+    pls = PLSRegression(n_components=1)
+    pls.fit(neural_x, lt0)
 
-    #pls = PLSCanonical(n_components=1)
-    #pls.fit(neural_x_flat, label_speed)
-    #speed_pls = pls.x_weights_[:, 0]
-
-    #pls = PLSCanonical(n_components=1)
-    #pls.fit(neural_x_flat, label_time)
-    #time_pls = pls.x_weights_[:, 0]
-
-    #return angle_between(time_pls, speed_pls), 0
-
-    neural_x_time = shift_mean(neural_x, avg_axis=1)
-    neural_x_speed = shift_mean(neural_x, avg_axis = 0)
-    #print(neural_x_time.shape)
-
-    # collecting all tangent vectors
-    neural_x_time_flat = neural_x_time.reshape((-1, neural_x_time.shape[-1]))
-    neural_x_speed_flat = neural_x_speed.reshape((-1, neural_x_speed.shape[-1]))
-
-    pca = PCA(n_components=1)
-    pca.fit_transform(neural_x_time_flat)
-    time_pc = pca.components_[0]
-    pca.fit_transform(neural_x_speed_flat)
-    speed_pc = pca.components_[0]
-
-    return angle_between(time_pc, speed_pc), 0
+    pls_lt0 = pls.x_scores_[:, 0].flatten()
+    lt0 = lt0.flatten()
+    pass
 
 def cos_xt_xv(neural_x, error_bar='std'):
     '''

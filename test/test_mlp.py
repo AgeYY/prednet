@@ -15,7 +15,7 @@ from sklearn.cross_decomposition import PLSCanonical, PLSRegression
 from predusion.mlp_agent import MLP
 from predusion.mlp_trainer import train, evaluate
 from predusion.static_dataset import Surface_dataset
-from predusion.geo_tool import angle_PC
+from predusion.geo_tool import angle_PC, angle_between
 from kitti_settings import *
 
 
@@ -32,7 +32,7 @@ helicoid_alpha, helicoid_beta = 1, 2
 weight_decay = 0.001
 train_ratio = 0.8
 n_epoch = 100
-n_sample = 400
+n_sample = 1000
 model_path = os.path.join(WEIGHTS_DIR, 'mlp_cylinder.pt')  # where weights will be saved
 n_component_visu = 2
 
@@ -44,7 +44,7 @@ n_component_visu = 2
 #length = n_sample**2
 
 lt1 = np.random.uniform(0, 2 * np.pi, n_sample)
-lt2 = np.random.uniform(-1, 1, n_sample)
+lt2 = np.random.uniform(-4, 4, n_sample)
 length = n_sample
 
 lt = {'lt1': lt1, 'lt2': lt2}
@@ -119,15 +119,15 @@ for key in feamap:
         pls.fit(feamap_key, lt0)
         pls_lt0 = pls.x_weights_[:, 0] * scale
         origin = np.zeros(pls_lt0.shape)
-        line0 = np.vstack((pls_lt0, origin))
-        return line0
+        line0 = np.vstack((origin, pls_lt0))
+        return line0, pls_lt0
 
     lt0 = label[:, [0]]
-    line0 = line_i(feamap_key, lt0, scale=5)
+    line0, pls_lt0 = line_i(feamap_key, lt0, scale=5)
     ploter.add_line(line0, ax=ax1, color='b')
 
     lt1 = label[:, [1]]
-    line1 = line_i(feamap_key, lt1, scale=2)
+    line1, pls_lt1 = line_i(feamap_key, lt1, scale=2)
     ploter.add_line(line1, ax=ax1, color='r')
 
     title = 'mlp_color_lt2_' + key
