@@ -8,6 +8,7 @@ import numpy as np
 import hickle as hkl
 
 import predusion.geo_tool as geo_tool
+from predusion.pls_analyzer import PLS_pair
 from data_utils import SequenceGenerator
 from kitti_settings import *
 
@@ -69,7 +70,7 @@ class Manifold_analyzer():
                 mean_dot_layer, err_dot_layer = geo_tool.ratio_speed_time(neural_x)
             elif geo_tool_method == 'angle_PC':
                 neural_x = geo_tool.pca_reduce(neural_x, n_components=10)
-                print(mode)
+                # create neural_x_flat and label for angle_pc
                 label_speed = np.arange(neural_x.shape[0])
                 label_time = np.arange(neural_x.shape[1])
                 label_speed, label_time = np.meshgrid(label_speed, label_time)
@@ -81,7 +82,12 @@ class Manifold_analyzer():
                 label[:, 0] = label_speed
                 label[:, 1] = label_time
 
-                mean_dot_layer, err_dot_layer = geo_tool.angle_PC(neural_x_flat, label)
+                pls = PLS_pair()
+                pls.fit(neural_x_flat, label)
+
+                mean_dot_layer = pls.angle()
+                err_dot_layer = 0
+                print(mode, pls.score())
 
             self.mean_dot.append(mean_dot_layer)
             self.err_dot.append(err_dot_layer)

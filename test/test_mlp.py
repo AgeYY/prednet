@@ -16,6 +16,7 @@ from predusion.mlp_agent import MLP
 from predusion.mlp_trainer import train, evaluate
 from predusion.static_dataset import Surface_dataset
 from predusion.geo_tool import angle_PC, angle_between
+from predusion.pls_analyzer import PLS_pair
 from kitti_settings import *
 
 
@@ -32,7 +33,7 @@ helicoid_alpha, helicoid_beta = 1, 2
 weight_decay = 0.001
 train_ratio = 0.8
 n_epoch = 100
-n_sample = 1000
+n_sample = 4000
 model_path = os.path.join(WEIGHTS_DIR, 'mlp_cylinder.pt')  # where weights will be saved
 n_component_visu = 2
 
@@ -81,62 +82,85 @@ label = np.vstack((theta, z)).T
 
 #for key in feamap
 
-fig = plt.figure(figsize=(15, 8))
 
 i = 0
+angle_list, score0_list, score1_list = [], [], []
 ploter = Ploter_dim_reduction(method='pca')
 
+#fig = plt.figure(figsize=(15, 8))
 for key in feamap:
     if key == 'y_pred':
         continue
 
     feamap_key = feamap[key].cpu().detach().numpy()
     # calculate the angle
-    angle = angle_PC(feamap_key, label)
+    pls_ana = PLS_pair()
+    pls_ana.fit(feamap_key, label)
+    angle = pls_ana.angle()
+    score = pls_ana.score()
+
     print(key, angle)
+    print(key, score)
 
-    # visualization
-    title = 'mlp_color_lt1_' + key
+    angle_list.append(angle)
+    score0_list.append(score[0])
+    score1_list.append(score[1])
 
-    if n_component_visu == 3:
-        ax1 = fig.add_subplot(2, n_layers, i + 1, projection='3d')
-        ax2 = fig.add_subplot(2, n_layers, i + 1 + n_layers, projection='3d')
-        cax1 = fig.add_axes([0.27, 0.95, 0.5, 0.05])
-        cax2 = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+    ############# visualization
+    #title = 'mlp_color_lt1_' + key
 
-    elif n_component_visu == 2:
-        ax1 = fig.add_subplot(2, n_layers, i + 1)
-        ax2 = fig.add_subplot(2, n_layers, i + 1 + n_layers)
-        cax1 = fig.add_axes([0.27, 0.95, 0.5, 0.05])
-        cax2 = fig.add_axes([0.27, 0.05, 0.5, 0.05])
+    #if n_component_visu == 3:
+    #    ax1 = fig.add_subplot(2, n_layers, i + 1, projection='3d')
+    #    ax2 = fig.add_subplot(2, n_layers, i + 1 + n_layers, projection='3d')
+    #    cax1 = fig.add_axes([0.27, 0.95, 0.5, 0.05])
+    #    cax2 = fig.add_axes([0.27, 0.05, 0.5, 0.05])
 
-    ploter.fit(feamap_key)
-    fig, ax = ploter.plot_dimension_reduction(feamap_key, title=title, colorinfo=theta, fig=fig, ax=ax1, cax=cax1)
+    #elif n_component_visu == 2:
+    #    ax1 = fig.add_subplot(2, n_layers, i + 1)
+    #    ax2 = fig.add_subplot(2, n_layers, i + 1 + n_layers)
+    #    cax1 = fig.add_axes([0.27, 0.95, 0.5, 0.05])
+    #    cax2 = fig.add_axes([0.27, 0.05, 0.5, 0.05])
 
-    # show the pls axis
-    def line_i(feamap_key,lt0, scale=1):
-        pls = PLSRegression(n_components=1)
-        pls.fit(feamap_key, lt0)
-        pls_lt0 = pls.x_weights_[:, 0] * scale
-        origin = np.zeros(pls_lt0.shape)
-        line0 = np.vstack((origin, pls_lt0))
-        return line0, pls_lt0
+    #ploter.fit(feamap_key)
+    #fig, ax = ploter.plot_dimension_reduction(feamap_key, title=title, colorinfo=theta, fig=fig, ax=ax1, cax=cax1)
 
-    lt0 = label[:, [0]]
-    line0, pls_lt0 = line_i(feamap_key, lt0, scale=5)
-    ploter.add_line(line0, ax=ax1, color='b')
+    ## show the pls axis
+    #def line_i(feamap_key,lt0, scale=1):
+    #    pls = PLSRegression(n_components=1)
+    #    pls.fit(feamap_key, lt0)
+    #    pls_lt0 = pls.x_weights_[:, 0] * scale
+    #    origin = np.zeros(pls_lt0.shape)
+    #    line0 = np.vstack((origin, pls_lt0))
+    #    return line0, pls_lt0
 
-    lt1 = label[:, [1]]
-    line1, pls_lt1 = line_i(feamap_key, lt1, scale=2)
-    ploter.add_line(line1, ax=ax1, color='r')
+    #lt0 = label[:, [0]]
+    #line0, pls_lt0 = line_i(feamap_key, lt0, scale=5)
+    #ploter.add_line(line0, ax=ax1, color='b')
 
-    title = 'mlp_color_lt2_' + key
-    fig, ax = ploter.plot_dimension_reduction(feamap_key, title=title, colorinfo=z, fig=fig, ax=ax2, cax=cax2)
+    #lt1 = label[:, [1]]
+    #line1, pls_lt1 = line_i(feamap_key, lt1, scale=2)
+    #ploter.add_line(line1, ax=ax1, color='r')
+
+    #title = 'mlp_color_lt2_' + key
+    #fig, ax = ploter.plot_dimension_reduction(feamap_key, title=title, colorinfo=z, fig=fig, ax=ax2, cax=cax2)
 
 
-    i += 1
+    #i += 1
 
-fig.savefig('./figs/' + tot_title + '.pdf')
+#fig.savefig('./figs/' + tot_title + '.pdf')
 
+#plt.show()
+
+layer = np.arange(len(angle_list))
+plt.figure()
+plt.title('linear decoding r2 score for the two latent variables')
+plt.plot(layer, score0_list[::-1], label='latent0')
+plt.plot(layer, score1_list[::-1], label='latent1')
+plt.legend()
+
+plt.figure()
+plt.title('angle of the two pls')
+plt.plot(layer, angle_list[::-1])
+plt.ylim([0, 90])
 plt.show()
 

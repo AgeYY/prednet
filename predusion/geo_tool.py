@@ -2,6 +2,7 @@ import numpy as np
 from scipy.spatial import procrustes
 from sklearn.decomposition import PCA
 from sklearn.cross_decomposition import PLSCanonical, PLSRegression
+from sklearn.model_selection import train_test_split
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
@@ -40,8 +41,6 @@ def angle_PC(neural_x, label, error_bar='std'):
     nerual_x ([n_sample, n_feature]): neural response
     label ([n_sample, n_labels = 2]):
     '''
-    from sklearn.model_selection import train_test_split
-
     neural_x_train, neural_x_test, label_train, label_test = train_test_split(neural_x, label, test_size=0.3)
 
     lt0_train = label_train[:, [0]]
@@ -59,6 +58,29 @@ def angle_PC(neural_x, label, error_bar='std'):
     pls_lt1 = pls.x_weights_[:, 0]
 
     return angle_between(pls_lt0, pls_lt1), 0
+
+def pls_angle_score(neural_x, label):
+    '''
+    nerual_x ([n_sample, n_feature]): neural response
+    label ([n_sample, n_labels = 2]):
+    '''
+    neural_x_train, neural_x_test, label_train, label_test = train_test_split(neural_x, label, test_size=0.3)
+
+    lt0_train = label_train[:, [0]]
+    lt1_train = label_train[:, [1]]
+
+    pls = PLSRegression(n_components=1)
+    pls.fit(neural_x_train, lt0_train)
+
+    score_lt0 = pls.score(neural_x_test, label_test[:, [0]])
+    score_lt1 = pls.score(neural_x_test, label_test[:, [1]])
+
+    pls_lt0 = pls.x_weights_[:, 0]
+
+    pls.fit(neural_x_train, lt1_train)
+    pls_lt1 = pls.x_weights_[:, 0]
+
+    return angle_between(pls_lt0, pls_lt1), score_lt0, score_lt1
 
 #def angle_PC_grid(neural_x, error_bar='std'):
 #
