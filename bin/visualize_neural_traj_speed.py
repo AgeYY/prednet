@@ -6,7 +6,9 @@ import hickle as hkl
 import matplotlib.pyplot as plt
 from data_utils import SequenceGenerator
 from predusion.manifold_analyzer import Manifold_analyzer
-from predusion.ploter import plot_dimension_reduction
+from predusion.ploter import plot_dimension_reduction, Ploter_dim_reduction
+from predusion.tools import numpy_train_test_split
+from predusion import geo_tool
 
 from kitti_settings import *
 
@@ -73,6 +75,23 @@ for mode in output_mode:
 
     # rearange the neural speed
     neural_x_sort = neural_x_cut[ind]
+    # calculate the label
+    neural_x = geo_tool.pca_reduce(neural_x_cut, n_components=10)
+    neural_x_flat = neural_x.reshape( (-1, neural_x.shape[-1]) )
+    
+    label = np.empty( (neural_x_flat.shape[0], 2) )
+    label[:, 0] = colorinfo_time_sort.flatten()
+    label[:, 1] = colorinfo_speed_sort.flatten()
 
-    plot_dimension_reduction(neural_x_sort, method=embed_method, n_components=n_components, colorinfo=colorinfo_time_sort, title=out_data_head + '_' + embed_method + '_neuron_color_time_{}'.format(mode), align_delta=align_delta)
-    plot_dimension_reduction(neural_x_sort, method=embed_method, n_components=n_components, colorinfo=colorinfo_speed_sort, title=out_data_head + '_' + embed_method + '_neuron_color_speed_{}'.format(mode), align_delta=align_delta)
+    train_feamap_key, train_label, test_feamap_key, test_label = numpy_train_test_split(neural_x_flat, label, train_ratio=0.7)
+    ####### calculate label end
+
+    ploter = Ploter_dim_reduction(method='pls_pair')
+
+    ploter.fit(train_feamap_key, train_label)
+    title = out_data_head + '_' + embed_method + '_neuron_color_speed_{}'.format(mode)
+    fig, ax = ploter.plot_dimension_reduction(test_feamap_key, title=title, colorinfo=test_label[:, 0], save_fig='./figs/' + title + '.pdf')
+    title = out_data_head + '_' + embed_method + '_neuron_color_time_{}'.format(mode)
+    fig, ax = ploter.plot_dimension_reduction(test_feamap_key, title=title, colorinfo=test_label[:, 1], save_fig='./figs/' + title + '.pdf')
+    #plot_dimension_reduction(neural_x_sort, method=embed_method, n_components=n_components, colorinfo=colorinfo_time_sort, title=out_data_head + '_' + embed_method + '_neuron_color_time_{}'.format(mode), align_delta=align_delta)
+    #plot_dimension_reduction(neural_x_sort, method=embed_method, n_components=n_components, colorinfo=colorinfo_speed_sort, title=out_data_head + '_' + embed_method + '_neuron_color_speed_{}'.format(mode), align_delta=align_delta)

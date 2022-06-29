@@ -25,6 +25,7 @@ class PLS_pair():
 
         self.pls_ax_0 = unit_vector(self.pls0.x_weights_[:, 0])
         self.pls_ax_1 = unit_vector(self.pls1.x_weights_[:, 0])
+
     def transform(self, data):
         '''
         projecting data to the plane of pls0.x_weights_[:, 0] and pls1.x_weights_[:, 1], and shift the mean of data to center

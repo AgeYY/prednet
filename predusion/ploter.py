@@ -123,7 +123,7 @@ class Ploter_dim_reduction():
 
         if mode == '2D':
             if ax is None:
-                ax = fig.add_axes()
+                ax = fig.add_subplot()
 
             if cax is None:
                 cax = fig.add_axes([0.27, 0.8, 0.5, 0.05]) # colorbar

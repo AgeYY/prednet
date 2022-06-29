@@ -44,6 +44,22 @@ class Manifold_analyzer():
             self.neural_x_all['pixel_shuffle'] = pixel_x_shuffle
             self.output_mode.insert(0, 'pixel_shuffle')
 
+    def explicit_label(self, neural_x, pca_component=10):
+        neural_x = geo_tool.pca_reduce(neural_x, n_components=pca_component)
+        # create neural_x_flat and label for angle_pc
+        label_speed = np.arange(neural_x.shape[0])
+        label_time = np.arange(neural_x.shape[1])
+        label_speed, label_time = np.meshgrid(label_speed, label_time)
+        label_speed, label_time = label_speed.T.flatten(), label_time.T.flatten()
+
+        neural_x_flat = neural_x.reshape( (-1, neural_x.shape[-1]) )
+
+        label = np.empty( (neural_x_flat.shape[0], 2) )
+        label[:, 0] = label_speed
+        label[:, 1] = label_time
+
+        return neural_x_flat, label
+
     def analyze(self, geo_tool_method='cos_xt_xv', cut0=2, cut=12, n_com=None, print_pca_message=False):
         '''
         geo_tool_method (str): cos_xt_xv, procrustes_curve_diff_time, dim_manifold, ratio_speed_time
@@ -69,26 +85,22 @@ class Manifold_analyzer():
                 neural_x = geo_tool.pca_reduce(neural_x, n_components=n_com) # processing
                 mean_dot_layer, err_dot_layer = geo_tool.ratio_speed_time(neural_x)
             elif geo_tool_method == 'angle_PC':
-                neural_x = geo_tool.pca_reduce(neural_x, n_components=10)
-                # create neural_x_flat and label for angle_pc
-                label_speed = np.arange(neural_x.shape[0])
-                label_time = np.arange(neural_x.shape[1])
-                label_speed, label_time = np.meshgrid(label_speed, label_time)
-                label_speed, label_time = label_speed.T.flatten(), label_time.T.flatten()
-
-                neural_x_flat = neural_x.reshape( (-1, neural_x.shape[-1]) )
-
-                label = np.empty( (neural_x_flat.shape[0], 2) )
-                label[:, 0] = label_speed
-                label[:, 1] = label_time
-
+                neural_x_flat, label = self.explicit_label(neural_x)
                 pls = PLS_pair()
                 pls.fit(neural_x_flat, label)
 
                 mean_dot_layer = pls.angle()
                 err_dot_layer = 0
-                #print(mode, pls.score())
+
+            elif geo_tool_method == 'r2_score':
+                neural_x_flat, label = self.explicit_label(neural_x)
+                pls = PLS_pair()
+                pls.fit(neural_x_flat, label)
+
+                mean_dot_layer = pls.score()[0] # score for the first label
+                err_dot_layer = 0
 
             self.mean_dot.append(mean_dot_layer)
             self.err_dot.append(err_dot_layer)
+
         return self.mean_dot, self.err_dot

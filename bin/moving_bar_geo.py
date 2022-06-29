@@ -32,7 +32,7 @@ nt = arg.nt
 output_mode = ['R0', 'R1', 'R2', 'R3']
 neural_data_path = 'neural_' + out_data_head + '_R' + '.hkl'
 #geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
-geo_tool_method_list = ['angle_PC']
+geo_tool_method_list = ['angle_PC', 'r2_score']
 n_com_cos = None
 
 weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
@@ -61,7 +61,8 @@ y_label['cos_xt_xv'] = 'cos of the angle between \n the tangent vector along \n 
 y_label['procrustes_curve_diff_time'] = 'dissimilarity'
 y_label['dim_manifold'] = 'number of principal components \n when the expalined var \n is larger than 0.95'
 y_label['ratio_speed_time'] = 'var of speed / var of time'
-y_label['angle_PC'] = 'angle between two information pcs (deg)'
+y_label['angle_PC'] = 'angle between two information pls (deg)'
+y_label['r2_score'] = 'r2 score of the speed'
 
 for i, method in enumerate(geo_tool_method_list):
     idx, idy = i//2, i%2
