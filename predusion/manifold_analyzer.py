@@ -87,7 +87,7 @@ class Manifold_analyzer():
 
                 mean_dot_layer = pls.angle()
                 err_dot_layer = 0
-                print(mode, pls.score())
+                #print(mode, pls.score())
 
             self.mean_dot.append(mean_dot_layer)
             self.err_dot.append(err_dot_layer)

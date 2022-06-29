@@ -45,6 +45,19 @@ def confidence_interval(data, measure=np.mean, n_resamples=None, size=None, ci_b
     ci_l, ci_u = np.percentile(measure_arr, ci_bound)
     return ci_l, ci_u
 
+def numpy_train_test_split(x, label, train_ratio=0.7):
+    '''
+    x ([n_sample, n_feature])
+    label ([n_sample, n_labels])
+    '''
+    # split feamap_key to train and test set, fit the train, and dimension reduction to test
+    indices = np.random.permutation(x.shape[0])
+    train_len = int(x.shape[0] * train_ratio)
+    training_idx, test_idx = indices[:train_len], indices[train_len:]
+    train_x, test_x = x[training_idx,:], x[test_idx,:]
+    train_label, test_label = label[training_idx,:], label[test_idx,:]
+    return train_x, train_label, test_x, test_label
+
 if __name__  == '__main__':
     import matplotlib.pyplot as plt
     radius = 2

@@ -8,6 +8,7 @@ from sklearn.manifold import MDS
 from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.manifold import Isomap
 from sklearn.decomposition import PCA
+from predusion.pls_analyzer import PLS_pair
 
 class Ploter():
 
@@ -72,6 +73,7 @@ class Ploter():
 class Ploter_dim_reduction():
     def __init__(self, method='mds', n_neighbors=2):
         n_components = 3
+        self.method = method
         if method=='mds':
             self.embedding = MDS(n_components=n_components)
         elif method=='lle':
@@ -80,6 +82,8 @@ class Ploter_dim_reduction():
             self.embedding = Isomap(n_components=n_components, n_neighbors=n_neighbors)
         elif method=='pca':
             self.embedding = PCA(n_components=n_components)
+        elif method=='pls_pair':
+            self.embedding = PLS_pair(n_components=1) # two latent variables, pick the first component for each latent variable
 
     def fit(self, data, label=None):
         '''
@@ -87,7 +91,10 @@ class Ploter_dim_reduction():
         n_component (int): 2 or 3 dimension visualization
         label ([sample, n_label]): required when the method is pls
         '''
-        return self.embedding.fit(data)
+        if self.method == 'pls_pair':
+            return self.embedding.fit(data, label)
+        else:
+            return self.embedding.fit(data)
 
     def transform(self, data):
         '''
@@ -98,16 +105,16 @@ class Ploter_dim_reduction():
     def fit_transform(data):
         return self.embedding.fit_transform(data)
 
-    def plot_dimension_reduction(self, data, colorinfo=None, title=None, save_fig=None, ax=None, fig=None, cax=None, fit=False, mode='2D'):
+    def plot_dimension_reduction(self, data, label=None, colorinfo=None, title=None, save_fig=None, ax=None, fig=None, cax=None, fit=False, mode='2D'):
         '''
         data ( [n_sample, n_feature])
-        label ( [n_sample] )
+        label ( [n_sample, 2] ): only 2 labels for pls_pair
         save_fig (str): the path for saving figure
         fit (bool): refit the data, or use the fitted embedding
         mode (str): 2D or 3D
         '''
         if fit:
-            data_trans = self.fit_transform(data)
+            data_trans = self.fit_transform(data, label)
         else:
             data_trans = self.transform(data)
 
