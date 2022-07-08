@@ -87,3 +87,20 @@ class SequenceGenerator(Iterator):
             return X_all, label_all
         else:
             return X_all
+
+def convert_prednet_output(output, label):
+    '''
+    the output label of create_all is the label for each video. Here we create the second label for the time step. So that each image has two labels: time and video label
+    features will be flatten
+    output = {'X': [n_video, n_frames, im_width, im_length, RGB value], 'R1': [n_video, n_frames, other ranks]}
+    every video must have the same number of frames
+    '''
+    label_convert = np.empty(output['X'].shape[0:2])
+    n_frames = output['X'].shape[1]
+
+    label_time = np.arange(n_frames)
+
+    label_convert = np.tile(label[:, None], n_frames, axis=1)
+
+    pixel_x = X_train.reshape([X_train.shape[0], X_train.shape[1], -1])
+    pass

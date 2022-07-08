@@ -32,25 +32,17 @@ helicoid_alpha, helicoid_beta = 1, 2
 
 weight_decay = 0.001
 train_ratio = 0.8
-n_epoch = 100
-n_sample = 4000
+n_epoch = 20
+n_sample = 200
 model_path = os.path.join(WEIGHTS_DIR, 'mlp_cylinder.pt')  # where weights will be saved
 n_component_visu = 2
 
-
-#lt1 = np.linspace(0, 2 * np.pi, n_sample)
-#lt2 = np.linspace(-1, 1, n_sample)
-#lt1, lt2 = np.meshgrid(lt1, lt2)
-#lt1, lt2 = lt1.flatten(), lt2.flatten()
-#length = n_sample**2
-
 lt1 = np.random.uniform(0, 2 * np.pi, n_sample)
 lt2 = np.random.uniform(-4, 4, n_sample)
+label = np.array([lt1, lt2]).T
 length = n_sample
 
-lt = {'lt1': lt1, 'lt2': lt2}
-
-dataset = Surface_dataset(length=length, to_torch=True, shape=surface_shape, lt=lt)
+dataset = Surface_dataset(length=length, to_torch=True, shape=surface_shape, label=label)
 train_len = int(len(dataset) * train_ratio)
 test_len = len(dataset) - train_len
 train_set, test_set = torch.utils.data.random_split(dataset, [train_len, test_len])
@@ -66,8 +58,8 @@ criterion = nn.MSELoss()
 #criterion = loss_cylinder
 
 for i in range(n_epoch):
-    train_loss = train(model, train_iterator, optimizer, criterion, x_key=dataset.x_key, y_key=dataset.y_key)
-    eval_loss= evaluate(model, test_iterator, criterion, x_key=dataset.x_key, y_key=dataset.y_key)
+    train_loss = train(model, train_iterator, optimizer, criterion)
+    eval_loss= evaluate(model, test_iterator, criterion)
     torch.save(model.state_dict(), model_path)
 
     if i % 50 == 0:
@@ -76,12 +68,8 @@ for i in range(n_epoch):
 
 # visualize the feature map
 feamap = model.feature_map(dataset[:]['X'])
-theta = dataset[:]['lt1'].cpu().detach().numpy()
-z = dataset[:]['lt2'].cpu().detach().numpy()
-label = np.vstack((theta, z)).T
-
-#for key in feamap
-
+label = dataset[:]['label'].cpu().detach().numpy()
+theta, z = label[:, 0], label[:, 1]
 
 i = 0
 angle_list, score0_list, score1_list = [], [], []
