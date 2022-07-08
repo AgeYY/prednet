@@ -1,4 +1,6 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 from scipy.spatial import procrustes
 from sklearn.decomposition import PCA
 from sklearn.cross_decomposition import PLSCanonical, PLSRegression
@@ -325,3 +327,29 @@ def ratio_speed_time(neural_x, error_bar='std', n_com=None, print_message=False)
     std_ratio = ratio * np.sqrt((std_s / mean_var_s)**2 + (std_t / mean_var_t)**2) # propagation of error
 
     return ratio, std_ratio
+
+class Geo_analyzer():
+    def __init__(self):
+        pass
+
+    def load_data(self, feamap, label):
+        '''
+        feamap (dict): {'X': [n_observation, n_features], 'R0': [n_observation, n_features], ...}
+        label (array [n_observation, n_labels])
+        '''
+        self.feamap = feamap
+        self.label = label
+
+    def label_dis(self):
+        '''show the histogram of label distribution'''
+        sns.displot(self.label)
+        plt.show()
+
+    def avg_manifold_by_label(self, kernel='gaussian', kernel_width=1, avg_label_id=0):
+        '''
+        we suggested that you firstly plot out the distribution of label then decide the range and n_points
+        average feature values with similar label
+        avg_label_id (int): averged according to the idth label
+        '''
+        pass
+

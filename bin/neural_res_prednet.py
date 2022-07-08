@@ -2,6 +2,7 @@
 import os
 import hickle as hkl
 import matplotlib.pyplot as plt
+import numpy as np
 
 from predusion.agent import Agent
 from data_utils import SequenceGenerator, convert_prednet_output
@@ -34,8 +35,7 @@ train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
 label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 #output_name = 'neural_' + out_data_head + '_E' + '.hkl'
-#output_mode = ['R0', 'R1', 'R2', 'R3']
-output_mode = ['R0']
+output_mode = ['R0', 'R1', 'R2', 'R3']
 output_name = 'neural_' + out_data_head + '_R' + '.hkl'
 output_label_name = 'label_' + out_data_head + '_R' + '.hkl'
 
@@ -51,7 +51,8 @@ output = sub.output_multiple(X_train, output_mode=output_mode, batch_size=batch_
 output['X'] = X_train
 
 # flatten features, and add time label to each video frame
-convert_prednet_output(output, label)
+label = np.expand_dims(label, axis=1) # rows are observations, columns are labels, in this case, only one label
+output, label = convert_prednet_output(output, label)
 
 hkl.dump(output, os.path.join(DATA_DIR, output_name))
 hkl.dump(label, os.path.join(DATA_DIR, output_label_name))

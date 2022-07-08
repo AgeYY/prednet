@@ -93,14 +93,41 @@ def convert_prednet_output(output, label):
     the output label of create_all is the label for each video. Here we create the second label for the time step. So that each image has two labels: time and video label
     features will be flatten
     output = {'X': [n_video, n_frames, im_width, im_length, RGB value], 'R1': [n_video, n_frames, other ranks]}
+    label ( [n_video, n_label_video] )
     every video must have the same number of frames
     '''
-    label_convert = np.empty(output['X'].shape[0:2])
+
     n_frames = output['X'].shape[1]
+    n_videos = output['X'].shape[0]
+    label_time_arr = np.arange(n_frames)
+    label_time = np.empty((*output['X'].shape[0:2], 1)) # [n_video, n_frame, 1]
+    for i in range(label_time.shape[0]): label_time[i, :, 0] = label_time_arr # repeat the same time label for every video
 
-    label_time = np.arange(n_frames)
+    label_repeat = np.expand_dims(label, axis=1)
+    label_repeat = np.tile(label_repeat, (1, n_frames, 1)) # [n_video, n_frame, n_label_video]
 
-    label_convert = np.tile(label[:, None], n_frames, axis=1)
+    label_out = np.append(label_repeat, label_time, axis=-1)
+    label_out = label_out.reshape( (-1, label_out.shape[-1]) )
 
-    pixel_x = X_train.reshape([X_train.shape[0], X_train.shape[1], -1])
-    pass
+    for key in output:
+        output[key] = output[key].reshape((n_videos*n_frames, -1))
+    return output, label_out
+
+if __name__ == "__main__":
+    n_video = 2
+    n_frames = 2
+    n_features = 2
+    x = np.empty((n_video, n_frames, n_features))
+    label = np.empty( (n_video, 1) )
+    print('label: \n', label)
+
+    output = {}
+    output['X'] = x
+
+    print('X before: \n', x)
+
+    output, label = convert_prednet_output(output, label)
+    print('label out: \n', label)
+
+    print('X out: \n', output['X'])
+
