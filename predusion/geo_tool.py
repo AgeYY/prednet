@@ -328,6 +328,42 @@ def ratio_speed_time(neural_x, error_bar='std', n_com=None, print_message=False)
 
     return ratio, std_ratio
 
+class Single_geo_analyzer():
+    @staticmethod
+    def bin_kernel(u, h=0.1):
+        return np.absolute(u) <= h / 2
+
+    @staticmethod
+    def gaussian_kernel(u, h=0.1):
+        return np.exp( - u**2 / 2.0 / h) / np.sqrt(2 * np.pi * h)
+
+    def fit_info_manifold(self, label_mesh, feamap, label, kernel='gaussian', kernel_width=0.1):
+        '''
+        average feature values with similar label, which is called as info_manifold
+        input:
+          label_mesh (array): label_mesh for the fitted info_manifold
+          feamap (array [num_sample, num_feature])
+          label (array [num_sample])
+        output:
+          self.label_mesh, self.info_manifold
+        '''
+        sample_size = feamap.shape[0]
+        mesh_size = label_mesh.shape[0]
+        kernel_mat = np.empty((mesh_size, sample_size))
+
+        for i, li in enumerate(label_mesh):
+            if kernel=='gaussian':
+                kernel_mat[i] = self.gaussian_kernel(li - label, h=kernel_width)
+            elif kernel=='bin':
+                kernel_mat[i] = self.bin_kernel(li - label, h=kernel_width)
+
+        kernel_norm = kernel_mat / kernel_mat.sum(axis=1, keepdims=1)
+
+        self.info_manifold = np.dot(kernel_norm, feamap)
+        self.label_mesh = label_mesh
+
+        return self.label_mesh.copy(), self.info_manifold.copy()
+
 class Geo_analyzer():
     def __init__(self):
         pass
@@ -339,17 +375,18 @@ class Geo_analyzer():
         '''
         self.feamap = feamap
         self.label = label
+        self.num_label = label.shape[1]
+
+        # create group
+        self.analyzer_group = {}
+
+        for key in feamap:
+            self.analyzer_group[key] = []
+
+            for i in num_label:
+                self.analyzer_group[key].append( Single_geo_analyzer() )
 
     def label_dis(self):
         '''show the histogram of label distribution'''
         sns.displot(self.label)
         plt.show()
-
-    def avg_manifold_by_label(self, kernel='gaussian', kernel_width=1, avg_label_id=0):
-        '''
-        we suggested that you firstly plot out the distribution of label then decide the range and n_points
-        average feature values with similar label
-        avg_label_id (int): averged according to the idth label
-        '''
-        pass
-
