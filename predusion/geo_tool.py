@@ -329,6 +329,9 @@ def ratio_speed_time(neural_x, error_bar='std', n_com=None, print_message=False)
     return ratio, std_ratio
 
 class Single_geo_analyzer():
+    def __init__(self):
+        self.kernel_dic = {'bin': self.bin_kernel, 'gaussian': self.gaussian_kernel}
+
     @staticmethod
     def bin_kernel(u, h=0.1):
         return np.absolute(u) <= h / 2
@@ -337,7 +340,7 @@ class Single_geo_analyzer():
     def gaussian_kernel(u, h=0.1):
         return np.exp( - u**2 / 2.0 / h) / np.sqrt(2 * np.pi * h)
 
-    def fit_info_manifold(self, label_mesh, feamap, label, kernel='gaussian', kernel_width=0.1):
+    def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=0.1):
         '''
         average feature values with similar label, which is called as info_manifold
         input:
@@ -352,10 +355,7 @@ class Single_geo_analyzer():
         kernel_mat = np.empty((mesh_size, sample_size))
 
         for i, li in enumerate(label_mesh):
-            if kernel=='gaussian':
-                kernel_mat[i] = self.gaussian_kernel(li - label, h=kernel_width)
-            elif kernel=='bin':
-                kernel_mat[i] = self.bin_kernel(li - label, h=kernel_width)
+                kernel_mat[i] = self.kernel_dic[kernel_name](li - label, h=kernel_width)
 
         kernel_norm = kernel_mat / kernel_mat.sum(axis=1, keepdims=1)
 
@@ -378,15 +378,26 @@ class Geo_analyzer():
         self.num_label = label.shape[1]
 
         # create group
-        self.analyzer_group = {}
+        self.ana_group = {}
 
         for key in feamap:
-            self.analyzer_group[key] = []
+            self.ana_group[key] = []
 
-            for i in num_label:
-                self.analyzer_group[key].append( Single_geo_analyzer() )
+            for i in range(self.num_label):
+                self.ana_group[key].append( Single_geo_analyzer() )
 
-    def label_dis(self):
+    def label_dis(self, label_id=None):
         '''show the histogram of label distribution'''
-        sns.displot(self.label)
+        if label_id is None:
+            sns.displot(self.label)
+        else:
+            sns.displot(self.label[:, label_id])
         plt.show()
+
+    def fit_info_manifold_all(self, label_mesh, label_id=0, kernel_name='gaussian', kernel_width=0.1):
+        '''
+        fit the info_manifold for all keys but single label
+        label_id (int): the ith label
+        '''
+        for key in self.ana_group:
+            self.ana_group[key][label_id].fit_info_manifold(label_mesh, self.feamap[key], self.label[:, label_id], kernel_name=kernel_name, kernel_width=kernel_width)

@@ -102,10 +102,22 @@ class Ploter_dim_reduction():
         '''
         return self.embedding.transform(data)
 
-    def fit_transform(data):
-        return self.embedding.fit_transform(data)
+    def fit_transform(self, data, fit_label):
+        self.fit(data, fit_label)
+        return self.transform(data)
 
-    def plot_dimension_reduction(self, data, label=None, colorinfo=None, title=None, save_fig=None, ax=None, fig=None, cax=None, fit=False, mode='2D'):
+    @staticmethod
+    def plot_helper(ax, plot_func, mode, *para, **kwargs):
+
+        name = plot_func + mode
+        if (name == 'plot2D') or (name == 'plot3D'):
+            return ax.plot(*para, **kwargs)
+        elif name == 'scatter2D':
+            return ax.scatter(*para, **kwargs)
+        elif name == 'scatter3D':
+            return ax.scatter3D(*para, **kwargs)
+
+    def plot_dimension_reduction(self, data, plot_func='scatter', fit_label=None, colorinfo=None, title=None, save_fig=None, ax=None, fig=None, cax=None, fit=False, mode='2D'):
         '''
         data ( [n_sample, n_feature])
         label ( [n_sample, 2] ): only 2 labels for pls_pair
@@ -114,7 +126,7 @@ class Ploter_dim_reduction():
         mode (str): 2D or 3D
         '''
         if fit:
-            data_trans = self.fit_transform(data, label)
+            data_trans = self.fit_transform(data, fit_label)
         else:
             data_trans = self.transform(data)
 
@@ -129,10 +141,10 @@ class Ploter_dim_reduction():
                 cax = fig.add_axes([0.27, 0.8, 0.5, 0.05]) # colorbar
 
             if not (colorinfo is None):
-                im = ax.scatter(data_trans[:, 0], data_trans[:, 1], c=colorinfo.flatten(), cmap="viridis")
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], c=colorinfo.flatten(), cmap="viridis")
                 fig.colorbar(im, cax=cax, orientation = 'horizontal')
             else:
-                im = ax.scatter(data_trans[:, 0], data_trans[:, 1])
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1])
 
         elif mode == '3D':
             if ax is None:
@@ -142,10 +154,10 @@ class Ploter_dim_reduction():
                 cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
 
             if not (colorinfo is None):
-                im = ax.scatter3D(data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False)
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False)
                 fig.colorbar(im, cax = cax, orientation = 'horizontal')
             else:
-                im = ax.scatter3D(data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], depthshade=False)
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], depthshade=False)
 
         ax.set_title(title)
         if not (save_fig is None):
@@ -234,32 +246,6 @@ def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2,
     if save_fig:
         fig.savefig('./figs/' + title + '.pdf')
     return fig, ax
-##### Plot out colorbar
-#import matplotlib.gridspec as gridspec
-#
-#imshape = (160 * 5, 160)
-#
-#square = immaker.Square(imshape, background=bg)
-#
-#seq_list = []
-#for color in color_list:
-#    r, g, b = color
-#    im = square.set_full_square(color=color)
-#    seq_list.append(im)
-#
-#seq_list = np.array(seq_list)
-#n_color = color_list.shape[0]
-#
-#plt.figure(figsize = (n_color, imshape[0]/imshape[1]))
-#gs = gridspec.GridSpec(1, n_color)
-#gs.update(wspace=0., hspace=0.)
-#
-#for t, sq in zip(range(n_color), seq_list):
-#    plt.subplot(gs[t])
-#    plt.imshow(sq.astype(int))
-#    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
-#plt.savefig(plot_save_dir + 'xbar'  + '.png')
-#plt.show()
 
 if __name__ == '__main__':
     import os

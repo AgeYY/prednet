@@ -4,11 +4,9 @@ import numpy as np
 import hickle as hkl
 import matplotlib.pyplot as plt
 
-from predusion.agent import Agent
 import predusion.geo_tool as geo_tool
-from predusion.manifold_analyzer import Manifold_analyzer
-from prednet import PredNet
-from data_utils import SequenceGenerator
+from predusion.ploter import Ploter_dim_reduction
+#from predusion.manifold_analyzer import Manifold_analyzer
 from kitti_settings import *
 import argparse
 
@@ -27,6 +25,8 @@ cut_time = arg.cut_time
 n_com_procrustes = arg.n_com_procrustes
 nt = arg.nt
 
+#out_data_head = 'moving_bar20'
+out_data_head = 'grating_stim'
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 #neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
 output_mode = ['R0', 'R1', 'R2', 'R3']
@@ -35,14 +35,39 @@ label_path = 'label_' + out_data_head + '_R' + '.hkl'
 #geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
 geo_tool_method_list = ['angle_PC', 'r2_score']
 n_com_cos = None
+layer_name = 'R3'
+label_id = 0
 
 feamap = hkl.load( os.path.join(DATA_DIR, neural_data_path) )
-label = hkl.load( os.path.join(DATA_DIR, label_path) )
+label = hkl.load( os.path.join(DATA_DIR, label_path) ) # label should include the sematic meaning
+
+# should add a dataset here, which can transform the data, split train and test set
 
 geoa = geo_tool.Geo_analyzer()
 
 geoa.load_data(feamap, label)
-geoa.label_dis()
+geoa.label_dis([0]) # show the distribution of labels
+
+# grating
+lt_mesh = np.linspace(0, 0.12, 100)
+geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=0.0001)
+
+## moving_bar20
+#lt_mesh = np.linspace(0, 12, 100)
+#geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=0.25)
+
+# visualize infomation manifold
+info_manifold = geoa.ana_group[layer_name][label_id].info_manifold.copy()
+label = lt_mesh
+
+plt_dr = Ploter_dim_reduction(method='pca')
+fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=lt_mesh, fit=True, mode='2D')
+fig, ax =  plt_dr.plot_dimension_reduction(geoa.feamap[layer_name], colorinfo=geoa.label[:, label_id], mode='2D', fig=fig, ax=ax)
+#plt_dr.fit(info_manifold)
+#fig, ax =  plt_dr.plot_dimension_reduction(geoa.feamap[layer_name], colorinfo=geoa.label[:, label_id], mode='2D')
+
+plt.show()
+
 #weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
 #json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
 #train_file = os.path.join(DATA_DIR, out_data_head + '_X_train.hkl')

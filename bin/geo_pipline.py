@@ -3,7 +3,7 @@ import os
 # create dataset with out_data_head shown below
 #os.system('python ./bin/gen_moving_bar_dataset.py')
 
-out_data_head_list = ['moving_bar20']
+#out_data_head_list = ['moving_bar20']
 #out_data_head_list = ['moving_bar_obj_red']
 #out_data_head_list = ['moving_bar_red']
 #out_data_head_list = ['moving_arc']
@@ -14,7 +14,7 @@ out_data_head_list = ['moving_bar20']
 #nt = 11 # number of frames per video
 #out_data_head_list = ['moving_bar_on_video'] # make sure nt equal to the number of frames
 
-#out_data_head_list = ['grating_stim'] # make sure nt equal to the number of frames
+out_data_head_list = ['grating_stim'] # make sure nt equal to the number of frames
 
 #out_data_head_list = ['dot_stim'] # make sure nt equal to the number of frames
 #nt = 59

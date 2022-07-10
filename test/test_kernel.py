@@ -28,10 +28,10 @@ fig = plt.figure()
 ax = plt.axes(projection='3d')
 ax.scatter3D(x, y[:, 0], y[:, 1], label='sample', color='grey')
 
-_, mean_y = geo_ana.fit_info_manifold(x_mesh, y, x, kernel='bin')
+_, mean_y = geo_ana.fit_info_manifold(x_mesh, y, x, kernel_name='bin')
 ax.plot(x_mesh, mean_y[:, 0], mean_y[:, 1], label='bin kernel')
 
-_, mean_y = geo_ana.fit_info_manifold(x_mesh, y, x, kernel='gaussian')
+_, mean_y = geo_ana.fit_info_manifold(x_mesh, y, x, kernel_name='gaussian')
 ax.plot(x_mesh, mean_y[:, 0], mean_y[:, 1], label='gaussian kernel')
 
 ax.plot(x_mesh, y_mesh_true[:, 0], y_mesh_true[:, 1], label='ground true')
