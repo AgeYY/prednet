@@ -34,10 +34,10 @@ train_file = os.path.join(DATA_DIR, out_data_head + '_X_train.hkl')
 train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
 label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 #output_mode = ['E0', 'E1', 'E2', 'E3']
-#output_name = 'neural_' + out_data_head + '_E' + '.hkl'
 output_mode = ['R0', 'R1', 'R2', 'R3']
-output_name = 'neural_' + out_data_head + '_R' + '.hkl'
-output_label_name = 'label_' + out_data_head + '_R' + '.hkl'
+output_neural = 'neural_' + out_data_head + '_R' + '.hkl'
+output_label = 'label_' + out_data_head + '_R' + '.hkl'
+output_label_name = 'label_name_' + out_data_head + '_R' + '.hkl'
 
 ##
 train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction', shuffle=False)
@@ -52,10 +52,11 @@ output['X'] = X_train
 
 # flatten features, and add time label to each video frame
 label = np.expand_dims(label, axis=1) # rows are observations, columns are labels, in this case, only one label
-output, label = convert_prednet_output(output, label)
+output, label, label_name = convert_prednet_output(output, label)
 
-hkl.dump(output, os.path.join(DATA_DIR, output_name))
-hkl.dump(label, os.path.join(DATA_DIR, output_label_name))
+hkl.dump(output, os.path.join(DATA_DIR, output_neural))
+hkl.dump(label, os.path.join(DATA_DIR, output_label))
+hkl.dump(label_name, os.path.join(DATA_DIR, output_label_name))
 
 #Check the prediction
 import matplotlib.pyplot as plt

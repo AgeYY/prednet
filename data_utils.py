@@ -111,7 +111,9 @@ def convert_prednet_output(output, label):
 
     for key in output:
         output[key] = output[key].reshape((n_videos*n_frames, -1))
-    return output, label_out
+
+    label_name = ['speed', 'time_step']
+    return output, label_out, label_name
 
 if __name__ == "__main__":
     n_video = 2

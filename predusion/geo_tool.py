@@ -5,6 +5,7 @@ from scipy.spatial import procrustes
 from sklearn.decomposition import PCA
 from sklearn.cross_decomposition import PLSCanonical, PLSRegression
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import Ridge as scikit_ridge
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
@@ -363,6 +364,37 @@ class Single_geo_analyzer():
         self.label_mesh = label_mesh
 
         return self.label_mesh.copy(), self.info_manifold.copy()
+
+    def fit_manifold_subspace(self, explained_var_thre):
+        '''
+        please firstly fit the self.info_manifold
+        return:
+          dim (int): dimensionality
+        '''
+        pca = PCA(n_components=None)
+        pca.fit(self.info_manifold)
+        var_explained = np.cumsum(pca.explained_variance_ratio_)
+        dim = np.argmax(var_explained>explained_var_thre) + 1
+        self.pca = PCA(n_components=dim)
+        self.pca.fit(self.info_manifold)
+        return self.pca, dim
+
+    def linear_regression_score(self, explained_var_thre, feamap_train, label_train, feamap_test, label_test):
+        '''
+        feamap_train ([n_observation, n_features]):
+        label_train (n_observation): only one label
+        return:
+          the amount of information encoded by the subspace of the manifold, as measured by: 1. find the pca space expalins explained_var_thre 2. linear regression 3. test coefficient of determination of the prediction
+        '''
+        self.fit_manifold_subspace(explained_var_thre)
+        feamap_proj_train, feamap_proj_test = self.pca.transform(feamap_train), self.pca.transform(feamap_test)
+        self.clf = scikit_ridge()
+        self.clf.fit(feamap_proj_train, label_train)
+        self.score = self.clf.score(feamap_proj_test, label_test)
+        return self.score
+
+    #def fit_info_manifold_score(self, explained_var_thre, feamap_train, label_train, feamap_test, label_test):
+    #    self.fit_info_manifold()
 
 class Geo_analyzer():
     def __init__(self):

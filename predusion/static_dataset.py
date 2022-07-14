@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
+import hickle as hkl
 import numpy as np
 
 class Surface_dataset(Dataset):
@@ -73,3 +74,38 @@ class Surface_dataset(Dataset):
         fea_map[:, 2] = theta
         return fea_map
 
+# general dataset, loading data from file
+
+class Layer_Dataset(Dataset):
+    def __init__(self, feamap_path, label_path, label_name_path):
+        '''
+        feamap (dict): {layer_name: feamap, layer_name: feamap}
+        label (np array): [n_observation, n_label]
+        label_name (np array str): [n_label]
+        '''
+        self.feamap = hkl.load(feamap_path)
+        self.label = hkl.load(label_path) # label should include the sematic meaning
+        self.label_name = hkl.load(label_name_path) # label should include the sematic meaning
+        self.length = self.label.shape[0]
+
+    def __getitem__(self, idx):
+
+        obs = {}
+        for key in self.feamap:
+            obs[key] = self.feamap[key][idx]
+
+        return obs, self.label[idx]
+
+    def __len__(self):
+        return self.length
+
+def train_test_validate_split(dataset, frac_train, frac_test, random_seed=42):
+    '''
+    split a dataset into train validate and testset.
+    frac_train: 0 to 1
+    the frac_validate is 1 - frac_train - frac_test
+    '''
+    l = len(dataset)
+    rand_idx = np.random.permutation(l)
+    train_idx, test_idx, validate_idx = np.split(rand_idx, [int(frac_train * l), int((frac_train + frac_test) * l)])
+    return dataset[train_idx], dataset[test_idx], dataset[validate_idx]

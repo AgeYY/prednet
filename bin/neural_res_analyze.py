@@ -6,9 +6,11 @@ import matplotlib.pyplot as plt
 
 import predusion.geo_tool as geo_tool
 from predusion.ploter import Ploter_dim_reduction
+from predusion.static_dataset import Layer_Dataset, train_test_validate_split
 #from predusion.manifold_analyzer import Manifold_analyzer
 from kitti_settings import *
 import argparse
+from sklearn.linear_model import Ridge as scikit_ridge
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_head', default='moving_bar20', type=str,
@@ -32,21 +34,32 @@ out_data_head = 'grating_stim'
 output_mode = ['R0', 'R1', 'R2', 'R3']
 neural_data_path = 'neural_' + out_data_head + '_R' + '.hkl'
 label_path = 'label_' + out_data_head + '_R' + '.hkl'
+label_name_path = 'label_name_' + out_data_head + '_R' + '.hkl'
 #geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
 geo_tool_method_list = ['angle_PC', 'r2_score']
 n_com_cos = None
 layer_name = 'R3'
 label_id = 0
+train_ratio = 0.6
+test_ratio = 0.3
+explained_var_thre = 0.95
 
-feamap = hkl.load( os.path.join(DATA_DIR, neural_data_path) )
-label = hkl.load( os.path.join(DATA_DIR, label_path) ) # label should include the sematic meaning
+feamap_path = os.path.join(DATA_DIR, neural_data_path)
+label_path = os.path.join(DATA_DIR, label_path)
+label_name_path = os.path.join(DATA_DIR, label_name_path)
 
+#feamap = hkl.load( os.path.join(DATA_DIR, neural_data_path) )
+#label = hkl.load( os.path.join(DATA_DIR, label_path) ) # label should include the sematic meaning
+
+dataset = Layer_Dataset(feamap_path, label_path, label_name_path)
 # should add a dataset here, which can transform the data, split train and test set
+
+(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
 
 geoa = geo_tool.Geo_analyzer()
 
-geoa.load_data(feamap, label)
-geoa.label_dis([0]) # show the distribution of labels
+geoa.load_data(feamap_train, label_train)
+#geoa.label_dis([0]) # show the distribution of labels
 
 # grating
 lt_mesh = np.linspace(0, 0.12, 100)
@@ -62,11 +75,26 @@ label = lt_mesh
 
 plt_dr = Ploter_dim_reduction(method='pca')
 fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=lt_mesh, fit=True, mode='2D')
-fig, ax =  plt_dr.plot_dimension_reduction(geoa.feamap[layer_name], colorinfo=geoa.label[:, label_id], mode='2D', fig=fig, ax=ax)
-#plt_dr.fit(info_manifold)
-#fig, ax =  plt_dr.plot_dimension_reduction(geoa.feamap[layer_name], colorinfo=geoa.label[:, label_id], mode='2D')
-
+#fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id], mode='2D', fig=fig, ax=ax) # validation
+fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id], mode='2D', fig=fig, ax=ax)
+#fig, ax =  plt_dr.plot_dimension_reduction(dataset.feamap[layer_name], colorinfo=dataset.label[:, label_id], mode='2D', fig=fig, ax=ax) # although illegue, let's try to see all the data
 plt.show()
+
+#### measuring the amount of information in the subspace of the manifold
+# fit the pca subspcace
+single_geo = geoa.ana_group[layer_name][label_id]
+score = single_geo.linear_regression_score(explained_var_thre, feamap_train[layer_name], label_train[:, label_id], feamap_test[layer_name], label_test[:, label_id])
+print(score)
+#pca, dim = single_geo.fit_manifold_subspace(explained_var_thre)
+#print(dim)
+## project data to the pca subspace of the manifold
+#feamap_proj_train, feamap_proj_test, feamap_proj_validate = pca.transform(feamap_train[layer_name]), pca.transform(feamap_test[layer_name]), pca.transform(feamap_validate[layer_name])
+## linear regression to the label
+#clf = scikit_ridge()
+#clf.fit(feamap_proj_train, label_train[:, label_id])
+## output the score
+#score = clf.score(feamap_proj_test, label_test[:, label_id])
+#print(score)
 
 #weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
 #json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
