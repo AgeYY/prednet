@@ -99,6 +99,50 @@ class Layer_Dataset(Dataset):
     def __len__(self):
         return self.length
 
+class Meta_Dataset():
+    def __init__(self, dataset_name_list, feamap_path_list, label_path_list, label_name_path_list):
+        '''
+        name_list (list of str): name of the datasets
+        label_name_path (list): label name for every dataset must be the same.
+        '''
+        self.dataset_name_list = dataset_name_list
+        self.label_name_path_list = label_name_path_list
+        self.n_dataset = len(feamap_path_list)
+        self.dataset = []
+        for i in range(self.n_dataset):
+            self.dataset.append( Layer_Dataset(feamap_path_list[i], label_path_list[i], label_name_path_list[i]) )
+
+    def within_dataset_train_test_validate_split(self, dataset_name, train_ratio, test_ratio):
+        '''
+        Split the data in one dataset into train test and validate
+        '''
+        for idx in range(self.n_dataset):
+            if dataset_name == self.dataset_name_list: break
+
+        return train_test_validate_split(self.dataset[idx], train_ratio, test_ratio)
+
+    def __getitem__(self, idx):
+        '''idx (int or list)'''
+        idx_np = np.array([idx]).flatten() # make it as an np array to measure the length
+        if len(idx_np) == 1:
+            return self.dataset[idx[0]].feamap, self.dataset[idx[0]].label
+
+        else:
+            feamap = {}
+            for key in self.dataset[0].feamap: # merge each key across different dataset
+                feamap[key] = []
+                for i in idx_np:
+                    feamap[key].append( self.dataset[i].feamap[key] )
+                feamap[key] = np.concatenate(feamap[key], axis=0)
+
+            label = []
+            for i in idx_np:
+                label.append( self.dataset[i].label )
+            label = np.concatenate(label, axis=0)
+
+            return feamap, label
+
+
 def train_test_validate_split(dataset, frac_train, frac_test, random_seed=42):
     '''
     split a dataset into train validate and testset.

@@ -15,6 +15,7 @@ import os
 #out_data_head_list = ['moving_bar_on_video'] # make sure nt equal to the number of frames
 
 out_data_head_list = ['grating_stim', 'moving_bar_wustl', 'moving_rect2080'] # make sure nt equal to the number of frames
+out_data_head_list = ['moving_bar20', 'moving_bar_red', 'moving_text'] # make sure nt equal to the number of frames
 
 #out_data_head_list = ['dot_stim'] # make sure nt equal to the number of frames
 #nt = 59
