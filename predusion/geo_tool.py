@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -371,13 +372,20 @@ class Single_geo_analyzer():
         return:
           dim (int): dimensionality
         '''
+
+        # if self.info_manifold not defined
+        try: self.info_manifold
+        except NameError:
+            print('Please fit the information manifold first\n')
+            sys.exit()
+
         pca = PCA(n_components=None)
         pca.fit(self.info_manifold)
         var_explained = np.cumsum(pca.explained_variance_ratio_)
-        dim = np.argmax(var_explained>explained_var_thre) + 1
-        self.pca = PCA(n_components=dim)
+        self.dim = np.argmax(var_explained>explained_var_thre) + 1
+        self.pca = PCA(n_components=self.dim)
         self.pca.fit(self.info_manifold)
-        return self.pca, dim
+        return self.pca, self.dim
 
     def linear_regression_score(self, explained_var_thre, feamap_train, label_train, feamap_test, label_test):
         '''
@@ -392,9 +400,6 @@ class Single_geo_analyzer():
         self.clf.fit(feamap_proj_train, label_train)
         self.score = self.clf.score(feamap_proj_test, label_test)
         return self.score
-
-    #def fit_info_manifold_score(self, explained_var_thre, feamap_train, label_train, feamap_test, label_test):
-    #    self.fit_info_manifold()
 
 class Geo_analyzer():
     def __init__(self):
@@ -433,3 +438,11 @@ class Geo_analyzer():
         '''
         for key in self.ana_group:
             self.ana_group[key][label_id].fit_info_manifold(label_mesh, self.feamap[key], self.label[:, label_id], kernel_name=kernel_name, kernel_width=kernel_width)
+
+    def linear_regression_score_all(self, explained_var_thre, feamap_test, label_test, label_id=0):
+        score = {}
+        dim = {} # dimensionality of the manifold
+        for key in self.ana_group:
+            score[key] = self.ana_group[key][label_id].linear_regression_score(explained_var_thre, self.feamap[key], self.label[:, label_id], feamap_test[key], label_test[:, label_id])
+            dim[key] = self.ana_group[key][label_id].dim
+        return dim, score

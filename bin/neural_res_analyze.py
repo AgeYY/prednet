@@ -5,6 +5,7 @@ import hickle as hkl
 import matplotlib.pyplot as plt
 
 import predusion.geo_tool as geo_tool
+import predusion.ploter as ploter
 from predusion.ploter import Ploter_dim_reduction
 from predusion.static_dataset import Layer_Dataset, train_test_validate_split
 #from predusion.manifold_analyzer import Manifold_analyzer
@@ -28,114 +29,93 @@ n_com_procrustes = arg.n_com_procrustes
 nt = arg.nt
 
 #out_data_head = 'moving_bar20'
-out_data_head = 'grating_stim'
+#out_data_head = 'grating_stim'
+out_data_head = 'moving_rect2080'
+out_data_head_gen = 'moving_bar_wustl' # fitting the manifold and test it on another stim
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 #neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
 output_mode = ['R0', 'R1', 'R2', 'R3']
-neural_data_path = 'neural_' + out_data_head + '_R' + '.hkl'
-label_path = 'label_' + out_data_head + '_R' + '.hkl'
-label_name_path = 'label_name_' + out_data_head + '_R' + '.hkl'
-#geo_tool_method_list = ['cos_xt_xv', 'dim_manifold', 'ratio_speed_time', 'procrustes_curve_diff_time']
-geo_tool_method_list = ['angle_PC', 'r2_score']
-n_com_cos = None
-layer_name = 'R3'
+neural_data_path = 'neural_' + out_data_head + '_R_prednet' + '.hkl'
+label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
+label_name_path = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
+
+neural_data_gen_path = 'neural_' + out_data_head_gen + '_R_prednet' + '.hkl'
+label_gen_path = 'label_' + out_data_head_gen + '_R_prednet' + '.hkl'
+label_name_gen_path = 'label_name_' + out_data_head_gen + '_R_prednet' + '.hkl'
+
 label_id = 0
 train_ratio = 0.6
 test_ratio = 0.3
 explained_var_thre = 0.95
+## drifting grating configurations
+#lt_mesh = np.linspace(0, 0.12, 100) 
+#kernel_width = 0.0001 
+## moving_rect2080 configurations
+lt_mesh = np.linspace(0, 12, 100) # moving bar 2080
+kernel_width = 0.5
 
 feamap_path = os.path.join(DATA_DIR, neural_data_path)
 label_path = os.path.join(DATA_DIR, label_path)
 label_name_path = os.path.join(DATA_DIR, label_name_path)
 
-#feamap = hkl.load( os.path.join(DATA_DIR, neural_data_path) )
-#label = hkl.load( os.path.join(DATA_DIR, label_path) ) # label should include the sematic meaning
+feamap_gen_path = os.path.join(DATA_DIR, neural_data_gen_path) # generalization
+label_gen_path = os.path.join(DATA_DIR, label_gen_path)
+label_name_gen_path = os.path.join(DATA_DIR, label_name_gen_path)
+
+def layer_order_helper():
+    if 'prednet' in neural_data_path:
+        n_layer = 5
+        layer_order = ['X', 'R0', 'R1', 'R2', 'R3']
+    return n_layer, layer_order
 
 dataset = Layer_Dataset(feamap_path, label_path, label_name_path)
-# should add a dataset here, which can transform the data, split train and test set
-
-(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
+dataset_gen = Layer_Dataset(feamap_gen_path, label_gen_path, label_name_gen_path)
 
 geoa = geo_tool.Geo_analyzer()
 
+############################## Tune the kernel_width
+(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
 geoa.load_data(feamap_train, label_train)
 #geoa.label_dis([0]) # show the distribution of labels
 
-# grating
-lt_mesh = np.linspace(0, 0.12, 100)
-geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=0.0001)
-
-## moving_bar20
-#lt_mesh = np.linspace(0, 12, 100)
-#geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=0.25)
-
+# fit the manifold
+geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
 # visualize infomation manifold
-info_manifold = geoa.ana_group[layer_name][label_id].info_manifold.copy()
-label = lt_mesh
+n_layer, layer_order = layer_order_helper()
+for layer_name in layer_order:
+    info_manifold = geoa.ana_group[layer_name][label_id].info_manifold.copy()
+    plt_dr = Ploter_dim_reduction(method='pca')
+    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=lt_mesh, fit=True, mode='2D')
+    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id], mode='2D', fig=fig, ax=ax) # validation
+    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id], mode='2D', fig=fig, ax=ax) # validation
+    plt.show()
+############################## Tune the kernel_width
 
-plt_dr = Ploter_dim_reduction(method='pca')
-fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=lt_mesh, fit=True, mode='2D')
-#fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id], mode='2D', fig=fig, ax=ax) # validation
-fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id], mode='2D', fig=fig, ax=ax)
-#fig, ax =  plt_dr.plot_dimension_reduction(dataset.feamap[layer_name], colorinfo=dataset.label[:, label_id], mode='2D', fig=fig, ax=ax) # although illegue, let's try to see all the data
+############################## Fix the hyperparameter and repeat on different training testing sets on different random seeds
+train_ratio, test_ratio = 0.7, 0.3
+n_bootstrap = 10
+dim, score = {}, {}
+for i in range(n_bootstrap):
+    (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
+    geoa.load_data(feamap_train, label_train)
+    geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
+    dim_boots, score_boots = geoa.linear_regression_score_all(explained_var_thre, feamap_test, label_test, label_id) # measuring the amount of information in the subspace of the manifold
+    for key in dim_boots:
+        try:
+            dim[key].append(dim_boots[key])
+            score[key].append(score_boots[key])
+        except KeyError:
+            dim[key] = [dim_boots[key]]
+            score[key] = [score_boots[key]]
+
+### visualize the dimensionality of the manifold
+n_layer, layer_order = layer_order_helper()
+fig, ax = plt.subplots(figsize=(4, 4))
+ax = ploter.plot_layer_error_bar_helper(score, n_layer, layer_order, ax)
+ax.axhline(1, color='k', linestyle='--')
+plt.show()
+fig, ax = plt.subplots(figsize=(4, 4))
+ax = ploter.plot_layer_error_bar_helper(dim, n_layer, layer_order, ax)
+ax.axhline(0, color='k', linestyle='--')
 plt.show()
 
-#### measuring the amount of information in the subspace of the manifold
-# fit the pca subspcace
-single_geo = geoa.ana_group[layer_name][label_id]
-score = single_geo.linear_regression_score(explained_var_thre, feamap_train[layer_name], label_train[:, label_id], feamap_test[layer_name], label_test[:, label_id])
-print(score)
-#pca, dim = single_geo.fit_manifold_subspace(explained_var_thre)
-#print(dim)
-## project data to the pca subspace of the manifold
-#feamap_proj_train, feamap_proj_test, feamap_proj_validate = pca.transform(feamap_train[layer_name]), pca.transform(feamap_test[layer_name]), pca.transform(feamap_validate[layer_name])
-## linear regression to the label
-#clf = scikit_ridge()
-#clf.fit(feamap_proj_train, label_train[:, label_id])
-## output the score
-#score = clf.score(feamap_proj_test, label_test[:, label_id])
-#print(score)
-
-#weights_file = os.path.join(WEIGHTS_DIR, 'tensorflow_weights/prednet_kitti_weights.hdf5')
-#json_file = os.path.join(WEIGHTS_DIR, 'prednet_kitti_model.json')
-#train_file = os.path.join(DATA_DIR, out_data_head + '_X_train.hkl')
-#train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
-#label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
-#print_message = False
-#
-#neural_dir = os.path.join(DATA_DIR, neural_data_path)
-#
-#mani_analyzer = Manifold_analyzer()
-#mani_analyzer.load_data(train_file, train_sources, label_file, neural_dir, add_shuffle_pixel=True, nt=nt)
-#
-#mean_dot, err_dot = {}, {}
-#for geo_tool_method in geo_tool_method_list:
-#    if geo_tool_method == 'procrustes_curve_diff_time': n_com = n_com_procrustes
-#    else: n_com = n_com_cos
-#
-#    mean_dot[geo_tool_method], err_dot[geo_tool_method] = mani_analyzer.analyze(geo_tool_method=geo_tool_method, n_com=n_com, cut0=cut_time[0], cut=cut_time[1])
-#
-#import matplotlib.pyplot as plt
-#fig, ax = plt.subplots(2, 2, sharex=True)
-#y_label = {}
-#y_label['cos_xt_xv'] = 'cos of the angle between \n the tangent vector along \n time and speed'
-#y_label['procrustes_curve_diff_time'] = 'dissimilarity'
-#y_label['dim_manifold'] = 'number of principal components \n when the expalined var \n is larger than 0.95'
-#y_label['ratio_speed_time'] = 'var of speed / var of time'
-#y_label['angle_PC'] = 'angle between two information pls (deg)'
-#y_label['r2_score'] = 'r2 score of the speed'
-#
-#for i, method in enumerate(geo_tool_method_list):
-#    idx, idy = i//2, i%2
-#    ax[idx, idy].scatter(range(-2, len(output_mode)), mean_dot[method])
-#    ax[idx, idy].errorbar(range(-2, len(output_mode)), mean_dot[method], yerr=err_dot[method])
-#    ax[idx, idy].axhline(0, color='k', linestyle='--')
-#    ax[idx, idy].set_ylabel(y_label[method])
-#
-#fig.add_subplot(111, frameon=False)
-## hide tick and tick label of the big axis
-#plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-#plt.xlabel('Layer of the Prednet \n -1 means the pixels; -2 means shuffled pixels')
-#plt.tight_layout()
-#plt.savefig('./figs/' + out_data_head + '.pdf')
-#plt.show()

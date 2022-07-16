@@ -35,9 +35,9 @@ train_sources = os.path.join(DATA_DIR, out_data_head + '_sources_train.hkl')
 label_file = os.path.join(DATA_DIR, out_data_head + '_label.hkl')
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 output_mode = ['R0', 'R1', 'R2', 'R3']
-output_neural = 'neural_' + out_data_head + '_R' + '.hkl'
-output_label = 'label_' + out_data_head + '_R' + '.hkl'
-output_label_name = 'label_name_' + out_data_head + '_R' + '.hkl'
+output_neural = 'neural_' + out_data_head + '_R_prednet' + '.hkl'
+output_label = 'label_' + out_data_head + '_R_prednet' + '.hkl'
+output_label_name = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
 
 ##
 train_generator = SequenceGenerator(train_file, train_sources, nt, label_file, sequence_start_mode='unique', output_mode='prediction', shuffle=False)

@@ -88,14 +88,16 @@ class SequenceGenerator(Iterator):
         else:
             return X_all
 
-def convert_prednet_output(output, label):
+def convert_prednet_output(output, label, t0=2):
     '''
-    the output label of create_all is the label for each video. Here we create the second label for the time step. So that each image has two labels: time and video label
+    the output label of create_all is the label for each video. Here we create the second label for the time step. So that each image has two labels: time and video label. We also cut out the first t0 time steps because in which the prediction of the prednet is bad
     features will be flatten
     output = {'X': [n_video, n_frames, im_width, im_length, RGB value], 'R1': [n_video, n_frames, other ranks]}
     label ( [n_video, n_label_video] )
     every video must have the same number of frames
     '''
+    for key in output:
+        output[key] = output[key][:, t0:]
 
     n_frames = output['X'].shape[1]
     n_videos = output['X'].shape[0]

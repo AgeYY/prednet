@@ -247,6 +247,31 @@ def plot_dimension_reduction(data, colorinfo=None, method='mds', n_components=2,
         fig.savefig('./figs/' + title + '.pdf')
     return fig, ax
 
+def plot_layer_error_bar_helper(score, n_layer, layer_order, ax, error_bar_method='std'):
+    '''
+    score (dict): for example, score = {'X': [0.1, 0.2], 'R0': [0.5, 0.3]} where each list contains repeated results
+    n_layer (int): number of layers, should be equal to the number of keys
+    layer_order (list of str): ['X', 'R0', 'R1', ...]
+    '''
+    score_order = {lo: score[lo] for lo in layer_order}
+
+    score_error = np.zeros(n_layer)
+    score_mean = np.zeros(n_layer)
+
+    i = 0
+    for key in score_order:
+        score_mean[i] = np.mean(score_order[key])
+        if error_bar_method=='std':
+            score_error[i] = np.std(score_order[key])
+        else: # sem
+            score_error[i] = np.std(score_order[key]) / np.sqrt(len(score_order[key]))
+        i += 1
+
+    ax.scatter(np.arange(-1, n_layer - 1), score_mean)
+    ax.errorbar(np.arange(-1, n_layer - 1), score_mean, yerr=score_error)
+    ax.plot(np.arange(-1, n_layer - 1), score_mean)
+    return ax
+
 if __name__ == '__main__':
     import os
     import predusion.immaker as immaker
