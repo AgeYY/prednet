@@ -31,6 +31,7 @@ nt = arg.nt
 
 #out_data_head = 'grating_stim'
 #out_data_head = 'moving_rect2080'
+#dataset_name_list = ['moving_rect2080', 'moving_bar_wustl', 'moving_bar20']
 dataset_name_list = ['moving_rect2080', 'moving_bar_wustl', 'moving_bar20', 'moving_bar_red']
 feamap_path_list, label_path_list, label_name_path_list = [], [], []
 for out_data_head in dataset_name_list:
@@ -72,10 +73,24 @@ geoa = geo_tool.Geo_analyzer()
 
 ############################## Fix the hyperparameter, leave-p-out cross validation
 train_ratio, test_ratio = 0.7, 0.3
+label_id=0
 n_bootstrap = 1
 dim, score = {}, {}
 
 dataset_idx = np.arange(len(dataset_name_list))
+
+train_idx, test_idx = [1, 2], [0, 1]
+(feamap_train, label_train), (feamap_test, label_test) = dataset[train_idx], dataset[test_idx]
+geoa.load_data(feamap_train, label_train)
+geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
+
+plt_dr = Ploter_dim_reduction(method='pca')
+fig, ax =  plt_dr.plot_dimension_reduction(feamap_train['R3'], colorinfo=label_train[:, label_id], fit=True, mode='3D')
+#fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id], mode='2D', fig=fig, ax=ax) # validation
+#fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id], mode='2D', fig=fig, ax=ax) # test
+plt.show()
+
+'''
 lpo = LeavePOut(1)
 
 for train_idx, test_idx in lpo.split(dataset_idx):
@@ -92,6 +107,7 @@ for train_idx, test_idx in lpo.split(dataset_idx):
     #    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id], mode='2D', fig=fig, ax=ax) # validation
     #    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id], mode='2D', fig=fig, ax=ax) # test
     #    plt.show()
+
 
     dim_boots, score_boots = geoa.linear_regression_score_all(explained_var_thre, feamap_test, label_test, label_id) # measuring the amount of information in the subspace of the manifold
     for key in dim_boots:
@@ -113,4 +129,4 @@ fig, ax = plt.subplots(figsize=(4, 4))
 ax = ploter.plot_layer_error_bar_helper(dim, n_layer, layer_order, ax)
 ax.axhline(0, color='k', linestyle='--')
 plt.show()
-
+'''

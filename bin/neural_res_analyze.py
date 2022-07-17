@@ -31,6 +31,7 @@ nt = arg.nt
 #out_data_head = 'grating_stim'
 #out_data_head = 'moving_rect2080'
 out_data_head = 'moving_bar_wustl'
+out_data_head = 'dot_stim'
 #output_mode = ['E0', 'E1', 'E2', 'E3']
 #neural_data_path = 'neural_' + out_data_head + '_E' + '.hkl'
 output_mode = ['R0', 'R1', 'R2', 'R3']
@@ -49,7 +50,7 @@ explained_var_thre = 0.95
 #lt_mesh = np.linspace(0, 12, 100) # moving bar 2080
 #kernel_width = 0.5
 ## moving_bar_wustl configurations
-lt_mesh = np.linspace(0, 12, 100)
+lt_mesh = np.linspace(0, 8, 100)
 kernel_width = 0.5
 
 feamap_path = os.path.join(DATA_DIR, neural_data_path)
@@ -69,7 +70,7 @@ geoa = geo_tool.Geo_analyzer()
 ############################## Tune the kernel_width
 (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
 geoa.load_data(feamap_train, label_train)
-#geoa.label_dis([0]) # show the distribution of labels
+geoa.label_dis([0]) # show the distribution of labels
 
 # fit the manifold
 geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
