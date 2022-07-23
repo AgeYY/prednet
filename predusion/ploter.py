@@ -71,8 +71,7 @@ class Ploter():
         return fig, gs
 
 class Ploter_dim_reduction():
-    def __init__(self, method='mds', n_neighbors=2):
-        n_components = 3
+    def __init__(self, method='mds', n_neighbors=2, n_components=3):
         self.method = method
         if method=='mds':
             self.embedding = MDS(n_components=n_components)

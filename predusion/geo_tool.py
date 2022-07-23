@@ -342,6 +342,11 @@ class Single_geo_analyzer():
     def gaussian_kernel(u, h=0.1):
         return np.exp( - u**2 / 2.0 / h) / np.sqrt(2 * np.pi * h)
 
+    @staticmethod
+    def pls_dim_reduction(feamap, label):
+        ''' reduce the dimension to have better estimation on the manifold and Sigma'''
+        pass
+
     def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=0.1):
         '''
         average feature values with similar label, which is called as info_manifold
@@ -363,6 +368,8 @@ class Single_geo_analyzer():
 
         self.info_manifold = np.dot(kernel_norm, feamap)
         self.label_mesh = label_mesh
+
+        # fit the Sigma
 
         return self.label_mesh.copy(), self.info_manifold.copy()
 
@@ -400,6 +407,12 @@ class Single_geo_analyzer():
         self.clf.fit(feamap_proj_train, label_train)
         self.score = self.clf.score(feamap_proj_test, label_test)
         return self.score
+
+    def decode(self, X):
+        ''' Decoding X to the information using the manifold
+        X (array [n_observations, n_features])
+        '''
+        pass
 
 class Geo_analyzer():
     def __init__(self):
@@ -439,6 +452,10 @@ class Geo_analyzer():
         for key in self.ana_group:
             self.ana_group[key][label_id].fit_info_manifold(label_mesh, self.feamap[key], self.label[:, label_id], kernel_name=kernel_name, kernel_width=kernel_width)
 
+    def fit_manifold_subspace_all(self, explained_var_thre, label_id=0):
+        for key in self.ana_group:
+            self.ana_group[key][label_id].fit_manifold_subspace(explained_var_thre)
+
     def linear_regression_score_all(self, explained_var_thre, feamap_test, label_test, label_id=0):
         score = {}
         dim = {} # dimensionality of the manifold
@@ -446,3 +463,29 @@ class Geo_analyzer():
             score[key] = self.ana_group[key][label_id].linear_regression_score(explained_var_thre, self.feamap[key], self.label[:, label_id], feamap_test[key], label_test[:, label_id])
             dim[key] = self.ana_group[key][label_id].dim
         return dim, score
+
+    def subspace_var_ratio(self, feamap_test, label_id_proj0, label_id_proj1):
+        '''
+        calculate the overlapping of two manifold subspace. Testing data will be firstly projected to subspace for label_id_proj0, record the variance var0. Then continue projecting data to the subspace of label_id_proj1, calculate the variance var01. The overlapping variance ratio is var01 / var0. Orthogonal then this number would be zero.
+        '''
+        var_ratio = {}
+        for key in self.ana_group:
+            feamap_proj0 = self.ana_group[key][label_id_proj0].pca.transform(feamap_test[key])
+            feamap_proj0 = self.ana_group[key][label_id_proj0].pca.inverse_transform(feamap_proj0)
+            var0 = vector_variance(feamap_proj0)
+
+            feamap_proj01 = self.ana_group[key][label_id_proj1].pca.transform(feamap_proj0)
+            feamap_proj01 = self.ana_group[key][label_id_proj1].pca.inverse_transform(feamap_proj01)
+            var01 = vector_variance(feamap_proj01)
+            var_ratio[key] = var01 / var0
+        return var_ratio
+
+def vector_variance(x):
+    '''
+    x (array [n_example, n_feature])
+        1. calculate the averaged vector across different examples.
+        2. sum over the variance of different components
+    '''
+    var = np.var(x, axis=0)
+    var = np.sum(var)
+    return var

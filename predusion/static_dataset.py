@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
+from sklearn.decomposition import PCA
 import hickle as hkl
 import numpy as np
 
@@ -77,16 +78,31 @@ class Surface_dataset(Dataset):
 # general dataset, loading data from file
 
 class Layer_Dataset(Dataset):
-    def __init__(self, feamap_path, label_path, label_name_path):
+    def __init__(self, feamap_path, label_path, label_name_path, explained_var_thre=None):
         '''
         feamap (dict): {layer_name: feamap, layer_name: feamap}
         label (np array): [n_observation, n_label]
         label_name (np array str): [n_label]
+        explained_var_ratio (float between 0 to 1): preprocessing the feamap using pca
         '''
         self.feamap = hkl.load(feamap_path)
+
+        if not (explained_var_thre is None):
+            for key in self.feamap:
+                self.feamap[key] = self.pca_dim_reduction(self.feamap[key], explained_var_thre)
+
         self.label = hkl.load(label_path) # label should include the sematic meaning
         self.label_name = hkl.load(label_name_path) # label should include the sematic meaning
         self.length = self.label.shape[0]
+
+    @staticmethod
+    def pca_dim_reduction(feamap, explained_var_thre):
+        pca = PCA(n_components=None)
+        pca.fit(feamap)
+        var_explained = np.cumsum(pca.explained_variance_ratio_)
+        dim = np.argmax(var_explained>explained_var_thre) + 1
+        pca = PCA(n_components=dim)
+        return pca.fit_transform(feamap)
 
     def __getitem__(self, idx):
 
