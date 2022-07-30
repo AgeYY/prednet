@@ -76,7 +76,6 @@ class Surface_dataset(Dataset):
         return fea_map
 
 # general dataset, loading data from file
-
 class Layer_Dataset(Dataset):
     def __init__(self, feamap_path, label_path, label_name_path, explained_var_thre=None):
         '''

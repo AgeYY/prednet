@@ -14,17 +14,17 @@ os.system('python ./bin/gen_moving_bar_dataset.py')
 #nt = 11 # number of frames per video
 #out_data_head_list = ['moving_bar_on_video'] # make sure nt equal to the number of frames
 
-#out_data_head_list = ['grating_stim', 'moving_bar_wustl', 'moving_rect2080'] # make sure nt equal to the number of frames
+#out_data_head_list = ['grating_stim', 'moving_bar_wustl', 'moving_rect2080', 'dot_stim', 'moving_bar_red'] # make sure nt equal to the number of frames
+out_data_head_list = ['grating_stim']
 #out_data_head_list = ['moving_bar20', 'moving_bar_red', 'moving_text'] # make sure nt equal to the number of frames
-out_data_head_list = ['dot_stim'] # make sure nt equal to the number of frames
-
 #out_data_head_list = ['dot_stim'] # make sure nt equal to the number of frames
+
 #nt = 59
 #out_data_head_list = ['mice_tf'] # make sure nt equal to the number of frames
 
 #out_data_head_list = ['moving_rect2080'] # make sure nt equal to the number of frames
 
-nt = 12
+nt = 8
 
 #weights_file = 'untrain_prednet_kitti_weights.hdf5'
 #json_file = 'untrain_prednet_kitti_model.json'

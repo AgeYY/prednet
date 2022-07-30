@@ -7,6 +7,9 @@ from sklearn.decomposition import PCA
 from sklearn.cross_decomposition import PLSCanonical, PLSRegression
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import Ridge as scikit_ridge
+from sklearn.metrics import r2_score
+from sklearn.feature_selection import mutual_info_regression
+from predusion import mutual_info
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
@@ -394,6 +397,7 @@ class Single_geo_analyzer():
         self.pca.fit(self.info_manifold)
         return self.pca, self.dim
 
+
     def linear_regression_score(self, explained_var_thre, feamap_train, label_train, feamap_test, label_test):
         '''
         feamap_train ([n_observation, n_features]):
@@ -405,14 +409,32 @@ class Single_geo_analyzer():
         feamap_proj_train, feamap_proj_test = self.pca.transform(feamap_train), self.pca.transform(feamap_test)
         self.clf = scikit_ridge()
         self.clf.fit(feamap_proj_train, label_train)
+        pred = self.clf.predict(feamap_proj_test)
         self.score = self.clf.score(feamap_proj_test, label_test)
-        return self.score
+        return pred, self.score
 
-    def decode(self, X):
+    def manifold_decoder_score(self, X, label=None):
         ''' Decoding X to the information using the manifold
         X (array [n_observations, n_features])
         '''
-        pass
+        pred = []
+        for obs in X:
+            distance = np.linalg.norm(obs - self.info_manifold, axis=1)
+            pred.append( self.label_mesh[np.argmin(distance)] )
+
+        pred = np.array(pred)
+        if label is None:
+            self.score = 0
+        else:
+            self.score = r2_score(label, pred)
+
+        return pred, self.score
+
+    def mutual_info_score(self, X, label, sigma=1, normalized=True):
+        pred, _ = self.manifold_decoder_score(X, label)
+        score = mutual_info.mutual_information_2d(pred, label, sigma=sigma, normalized=normalized)
+        return score
+
 
 class Geo_analyzer():
     def __init__(self):
@@ -456,13 +478,29 @@ class Geo_analyzer():
         for key in self.ana_group:
             self.ana_group[key][label_id].fit_manifold_subspace(explained_var_thre)
 
+    def manifold_decoder_score_all(self, feamap_test, label_test, label_id=0):
+        score = {}
+        for key in self.ana_group:
+            _, score[key] = self.ana_group[key][label_id].manifold_decoder_score(feamap_test[key], label_test[:, label_id])
+        return score
+
     def linear_regression_score_all(self, explained_var_thre, feamap_test, label_test, label_id=0):
         score = {}
+        for key in self.ana_group:
+            _, score[key] = self.ana_group[key][label_id].linear_regression_score(explained_var_thre, self.feamap[key], self.label[:, label_id], feamap_test[key], label_test[:, label_id])
+        return score
+
+    def dim_all(self, explained_var_thre, label_id):
         dim = {} # dimensionality of the manifold
         for key in self.ana_group:
-            score[key] = self.ana_group[key][label_id].linear_regression_score(explained_var_thre, self.feamap[key], self.label[:, label_id], feamap_test[key], label_test[:, label_id])
-            dim[key] = self.ana_group[key][label_id].dim
-        return dim, score
+            _, dim[key] = self.ana_group[key][label_id].fit_manifold_subspace(explained_var_thre)
+        return dim
+
+    def mutual_info_all(self, feamap_test, label_test, label_id=0, sigma=1, normalized=True):
+        mi = {} # dimensionality of the manifold
+        for key in self.ana_group:
+            mi[key] = self.ana_group[key][label_id].mutual_info_score(feamap_test[key], label_test[:, label_id], sigma=sigma, normalized=normalized)
+        return mi
 
     def subspace_var_ratio(self, feamap_test, label_id_proj0, label_id_proj1):
         '''

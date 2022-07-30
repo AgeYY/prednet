@@ -1,4 +1,6 @@
 # generate moving bar images and dataset as moving_bar_train.hkl.
+import shutil
+
 from predusion.immaker import Moving_square, Moving_dot
 from predusion import im_processor as impor
 
@@ -7,6 +9,13 @@ from predusion import im_processor as impor
 from PIL import Image
 
 class Dataset_generator():
+
+    def clear_image_folder(self, out_data_head, save_dir_head='./kitti_data/raw/'):
+        save_dir = save_dir_head + out_data_head + '/'
+        try:
+            shutil.rmtree(save_dir)
+        except: pass
+
     def moving_square(self, size_rect=20, width=200, time_step=12, init_pos=[30, 100], scale=None, out_data_head = 'moving_bar', color_bag=(0, 0, 0), color_rect=(255, 255, 255), speed_list=[0]):
         '''
         input:
@@ -78,7 +87,7 @@ class Dataset_generator():
         categories = [out_data_head]
         impor.process_data(categories, out_data_head=out_data_head)
 
-    def grating_stim(self, sf=0.02, width=200, time_step=12, scale=None, out_data_head = 'grating_stim', speed_list=[0]):
+    def grating_stim(self, sf=0.02, width=200, time_step=12, scale=None, out_data_head = 'grating_stim', speed_list=[0], ori_list=[0]):
         if scale is None:
             size_frame = width
         else:
@@ -87,7 +96,7 @@ class Dataset_generator():
         dg = Moving_dot(imshape=(width, width))
         dg.set_stim_obj(obj_name='GratingStim', sf=sf, size=size_frame)
 
-        dg.create_video_batch(speed_list=speed_list, n_frame=time_step, category=out_data_head)
+        dg.create_video_batch_grating_stim(speed_list=speed_list, ori_list=ori_list, n_frame=time_step, category=out_data_head)
         categories = [out_data_head]
         impor.process_data(categories, out_data_head=out_data_head)
 

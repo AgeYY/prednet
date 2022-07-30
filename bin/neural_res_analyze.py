@@ -43,10 +43,12 @@ label_id = 0
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.95
-explained_var_thre_pca_all_data = 0.95
+explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
-lt_mesh = np.linspace(0, 0.12, 100) 
-kernel_width = 0.0001
+lt0_mesh = np.linspace(0, 0.12, 100) 
+lt1_mesh = np.linspace(0, 180, 100)
+lt_mesh = [lt0_mesh, lt1_mesh]
+kernel_width = [0.0001, 90]
 ## moving_rect2080 configurations
 #lt_mesh = np.linspace(0, 12, 100) # moving bar 2080
 #kernel_width = 0.5
@@ -73,47 +75,50 @@ geoa = geo_tool.Geo_analyzer()
 ############################## Tune the kernel_width
 (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
 geoa.load_data(feamap_train, label_train)
-geoa.label_dis([0]) # show the distribution of labels
+geoa.label_dis([label_id]) # show the distribution of labels
 
 # fit the manifold
-geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
+geoa.fit_info_manifold_all(lt_mesh[label_id], label_id, kernel_width=kernel_width[label_id])
 # visualize infomation manifold
 n_layer, layer_order = layer_order_helper()
 for layer_name in layer_order:
     info_manifold = geoa.ana_group[layer_name][label_id].info_manifold.copy()
     plt_dr = Ploter_dim_reduction(method='pca', n_components=2)
-    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=lt_mesh, fit=True, mode='2D')
-    fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id], mode='2D', fig=fig, ax=ax) # validation
+    fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id], mode='2D', alpha=0.5, fit=True) # validation
+    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=lt_mesh[label_id], mode='2D', fig=fig, ax=ax)
     #fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id], mode='2D', fig=fig, ax=ax) # test
     plt.show()
 ############################## Tune the kernel_width
 
-############################## Fix the hyperparameter and repeat on different training testing sets on different random seeds
-train_ratio, test_ratio = 0.7, 0.3
-n_bootstrap = 10
-dim, score = {}, {}
-for i in range(n_bootstrap):
-    (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
-    geoa.load_data(feamap_train, label_train)
-    geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
-    dim_boots, score_boots = geoa.linear_regression_score_all(explained_var_thre, feamap_test, label_test, label_id) # measuring the amount of information in the subspace of the manifold
-    for key in dim_boots:
-        try:
-            dim[key].append(dim_boots[key])
-            score[key].append(score_boots[key])
-        except KeyError:
-            dim[key] = [dim_boots[key]]
-            score[key] = [score_boots[key]]
-
-### visualize the dimensionality of the manifold
-n_layer, layer_order = layer_order_helper()
-fig, ax = plt.subplots(figsize=(4, 4))
-ax = ploter.plot_layer_error_bar_helper(score, n_layer, layer_order, ax)
-ax.axhline(1, color='k', linestyle='--')
-ax.set_ylim(0, 1)
-plt.show()
-fig, ax = plt.subplots(figsize=(4, 4))
-ax = ploter.plot_layer_error_bar_helper(dim, n_layer, layer_order, ax)
-ax.axhline(0, color='k', linestyle='--')
-plt.show()
-
+############################### Fix the hyperparameter and repeat on different training testing sets on different random seeds
+#train_ratio, test_ratio = 0.6, 0.4
+#n_bootstrap = 10
+#dim, score = {}, {}
+#for i in range(n_bootstrap):
+#    (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
+#    geoa.load_data(feamap_train, label_train)
+#    geoa.fit_info_manifold_all(lt_mesh[label_id], label_id, kernel_width=kernel_width[label_id])
+#    #score_boots = geoa.linear_regression_score_all(explained_var_thre, feamap_test, label_test, label_id) # measuring the amount of information in the subspace of the manifold
+#    score_boots = geoa.manifold_decoder_score_all(feamap_test, label_test, label_id)
+#    #score_boots = geoa.mutual_info_all(feamap_test, label_test, label_id, sigma=kernel_width[label_id])
+#    dim_boots = geoa.dim_all(explained_var_thre, label_id)
+#
+#    for key in dim_boots:
+#        try:
+#            dim[key].append(dim_boots[key])
+#            score[key].append(score_boots[key])
+#        except KeyError:
+#            dim[key] = [dim_boots[key]]
+#            score[key] = [score_boots[key]]
+#
+#### visualize the dimensionality of the manifold
+#n_layer, layer_order = layer_order_helper()
+#fig, ax = plt.subplots(figsize=(4, 4))
+#ax = ploter.plot_layer_error_bar_helper(score, n_layer, layer_order, ax)
+#ax.axhline(1, color='k', linestyle='--')
+#ax.set_ylim(0, 1)
+#plt.show()
+#fig, ax = plt.subplots(figsize=(4, 4))
+#ax = ploter.plot_layer_error_bar_helper(dim, n_layer, layer_order, ax)
+#ax.axhline(0, color='k', linestyle='--')
+#plt.show()

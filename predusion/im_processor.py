@@ -37,6 +37,7 @@ def process_data(categories=[], desired_im_sz=(128, 160), val_recordings=[], tes
     not_train = splits['val'] + splits['test']
 
     label_list = {} # a dictionary {source_folder: label} This label contains all of testing, training, validation set
+    label_name_list = []
     for c in categories:  # Randomly assign recordings to training and testing. Cross-validation done across entire recordings.
         c_dir = os.path.join(DATA_DIR, 'raw', c + '/')
         print(c_dir)
@@ -47,7 +48,12 @@ def process_data(categories=[], desired_im_sz=(128, 160), val_recordings=[], tes
         label = hkl.load(label_dir)
         label_list = {**label_list, **label}
 
+        label_name_dir = os.path.join(DATA_DIR, 'raw/', c, 'label_name.json')
+        label_name = hkl.load(label_name_dir)
+        label_name_list = [*label_name_list, *label_name]
+
     hkl.dump(label_list, os.path.join(DATA_DIR, out_data_head + '_label' + '.hkl'))
+    hkl.dump(label_name_list, os.path.join(DATA_DIR, out_data_head + '_label_name' + '.hkl'))
 
     for split in splits:
         im_list = []

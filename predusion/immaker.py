@@ -270,6 +270,8 @@ class Moving_square(): # generate a moving square along the x direction
             self.clear_image()
         label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
+        label_name = ['speed']
+        hkl.dump(label_name, save_dir_head + category + '/label_name.json')
 
     def create_video_batch(self, init_pos = [0, 0], speed=[], step=20, color_rect=(255, 255, 255), color_bag=(0, 0, 0), save_dir_head='./kitti_data/raw/', category='moving_bar', sub_dir_head='sp_', size_rect=20, shape='rectangle', shape_para={}):
         '''
@@ -280,8 +282,10 @@ class Moving_square(): # generate a moving square along the x direction
             save_dir_label =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
             self.save_image(save_dir_label)
             self.clear_image()
-        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
+        label= {category + '-' + sub_dir_head + str(sp): [sp]  for sp in speed} # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
+        label_name = ['speed']
+        hkl.dump(label_name, save_dir_head + category + '/label_name.json')
 
 class Visual_stim_gen():
     def __init__(self, imshape=(200, 200)):
@@ -331,8 +335,10 @@ class Drift_grid(Visual_stim_gen):
             save_dir =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
             self.save_image(images, save_dir=save_dir)
 
-        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed_list} # source_folder : label. source_folder format is the same as process_kitti.py
+        label= {category + '-' + sub_dir_head + str(sp): [sp]  for sp in speed_list} # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
+        label_name = ['speed']
+        hkl.dump(label_name, save_dir_head + category + '/label_name.json')
 
 
 class Moving_dot(Visual_stim_gen):
@@ -363,13 +369,14 @@ class Moving_dot(Visual_stim_gen):
         if self.obj_name == 'DotStim':
             return None
 
-    def create_video(self, speed=0.02, tex='sin', n_frame=12):
+    def create_video(self, speed=0.02, ori=0, tex='sin', n_frame=12):
         '''
         speed (float): in the unit of phase_speed per frame
         '''
         win0 = visual.Window(self.imshape, screen = 0, monitor = 'testMonitor', fullscr=False, color=[0, 0, 0], units='pix')
 
         if self.obj_name == 'GratingStim':
+            self.kwargs.update({'ori': ori})
             self.obj = visual.GratingStim(win=win0, **self.kwargs)
         elif self.obj_name == 'DotStim':
             self.obj = visual.DotStim(win=win0, speed=speed, **self.kwargs)
@@ -389,18 +396,41 @@ class Moving_dot(Visual_stim_gen):
         win0.close()
         return images
 
-    def create_video_batch(self, speed_list=[], n_frame=12, save_dir_head='./kitti_data/raw/', category='GratingStim', sub_dir_head='sp_'):
+    def create_video_batch(self, speed_list=[], n_frame=12, save_dir_head='./kitti_data/raw/', category='grating_stim', sub_dir_head='sp_'):
         '''
         n_frame (int): the number of frames in each video
+        speed_list: list of float
+        ori_list: unit degree, this is for grating stim only
         '''
+        label = {}
         for sp in speed_list:
             images = self.create_video(speed=sp, n_frame=n_frame)
-            save_dir =save_dir_head + category + '/' + sub_dir_head + str(sp) + '/'
+            save_dir = save_dir_head + category + '/' + sub_dir_head + str(round(sp, 3)) + '/'
             self.save_image(images, save_dir=save_dir)
-
-        label= {category + '-' + sub_dir_head + str(sp): sp  for sp in speed_list} # source_folder : label. source_folder format is the same as process_kitti.py
+            key = category + '-' + sub_dir_head + str(round(sp, 3))
+            label[key] = [sp] # source_folder : label. source_folder format is the same as process_kitti.py
         hkl.dump(label, save_dir_head + category + '/label.json')
+        label_name = ['speed']
+        hkl.dump(label_name, save_dir_head + category + '/label_name.json')
 
+    def create_video_batch_grating_stim(self, speed_list=[0.08], ori_list=[0], n_frame=12, save_dir_head='./kitti_data/raw/', category='grating_stim', sub_dir_head='sp_'):
+        '''
+        n_frame (int): the number of frames in each video
+        speed_list: list of float
+        ori_list: unit degree, this is for grating stim only. Must have the same length as speed_list
+        '''
+        label = {}
+        for idx in range(len(speed_list)):
+            sp = speed_list[idx]
+            ori = ori_list[idx]
+            images = self.create_video(speed=sp, ori=ori, n_frame=n_frame)
+            save_dir = save_dir_head + category + '/' + sub_dir_head + str(round(sp, 3)) + '_ori_' + str(round(ori, 2)) + '/'
+            self.save_image(images, save_dir=save_dir)
+            key = category + '-' + sub_dir_head + str(round(sp, 3)) + '_ori_' + str(round(ori, 2))
+            label[key] = [sp, ori] # source_folder : label. source_folder format is the same as process_kitti.py
+        label_name = ['speed', 'orientation']
+        hkl.dump(label, save_dir_head + category + '/label.json')
+        hkl.dump(label_name, save_dir_head + category + '/label_name.json')
 
 if __name__ == '__main__':
 #    import matplotlib.pyplot as plt

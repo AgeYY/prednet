@@ -5,7 +5,7 @@ from keras.preprocessing.image import Iterator
 
 # Data generator that creates sequences for input into PredNet.
 class SequenceGenerator(Iterator):
-    def __init__(self, data_file, source_file, nt, label_file=None,
+    def __init__(self, data_file, source_file, nt, label_file=None, label_name_file=None,
                  batch_size=8, shuffle=False, seed=None,
                  output_mode='error', sequence_start_mode='all', N_seq=None,
                  data_format=K.image_data_format()):
@@ -16,6 +16,12 @@ class SequenceGenerator(Iterator):
             self.label = hkl.load(label_file)
         else:
             self.label = {}
+
+        if not (label_name_file is None):
+            self.label_name = np.array( hkl.load(label_name_file) )
+        else:
+            self.label_name = []
+
         self.nt = nt
         self.batch_size = batch_size
         self.data_format = data_format
@@ -84,11 +90,11 @@ class SequenceGenerator(Iterator):
             X_all[i] = self.preprocess(self.X[idx:idx+self.nt])
         if out_label:
             label_all = self.possible_label.copy()
-            return X_all, label_all
+            return X_all, label_all, self.label_name.copy()
         else:
             return X_all
 
-def convert_prednet_output(output, label, t0=2):
+def convert_prednet_output(output, label, label_name, t0=2):
     '''
     the output label of create_all is the label for each video. Here we create the second label for the time step. So that each image has two labels: time and video label. We also cut out the first t0 time steps because in which the prediction of the prednet is bad
     features will be flatten
@@ -114,7 +120,7 @@ def convert_prednet_output(output, label, t0=2):
     for key in output:
         output[key] = output[key].reshape((n_videos*n_frames, -1))
 
-    label_name = ['speed', 'time_step']
+    label_name = [*label_name, 'time_step']
     return output, label_out, label_name
 
 if __name__ == "__main__":
