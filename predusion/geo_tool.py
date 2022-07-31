@@ -339,7 +339,7 @@ class Single_geo_analyzer():
 
     @staticmethod
     def bin_kernel(u, h=0.1):
-        return np.absolute(u) <= h / 2
+        return np.linalg.norm(u) <= h / 2
 
     @staticmethod
     def gaussian_kernel(u, h=0.1):
@@ -365,7 +365,7 @@ class Single_geo_analyzer():
         kernel_mat = np.empty((mesh_size, sample_size))
 
         for i, li in enumerate(label_mesh):
-                kernel_mat[i] = self.kernel_dic[kernel_name](li - label, h=kernel_width)
+            kernel_mat[i] = self.kernel_dic[kernel_name](li - label, h=kernel_width)
 
         kernel_norm = kernel_mat / kernel_mat.sum(axis=1, keepdims=1)
 
@@ -435,6 +435,47 @@ class Single_geo_analyzer():
         score = mutual_info.mutual_information_2d(pred, label, sigma=sigma, normalized=normalized)
         return score
 
+class Double_geo_analyzer(Single_geo_analyzer):
+    def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=[0.01, 0.01]):
+        '''
+        average feature values with similar label, which is called as info_manifold
+        input:
+          label_mesh ([label_mesh0, label_mesh1]): the final label mesh would be the matrix product of these two
+          feamap (array [num_sample, num_feature])
+          label (array [num_sample])
+        output:
+          self.label_mesh, self.info_manifold
+        '''
+        sample_size = feamap.shape[0]
+        label_mesh0, label_mesh1 = label_mesh
+
+        kernel_mat0 = np.empty((label_mesh0.shape[0], sample_size))
+        kernel_mat1 = np.empty((label_mesh1.shape[0], sample_size))
+
+        for m, li in enumerate(label_mesh0):
+            kernel_mat0[m] = self.kernel_dic[kernel_name](li - label[:, 0], h=kernel_width[0])
+
+        for n, li in enumerate(label_mesh1):
+            kernel_mat1[n] = self.kernel_dic[kernel_name](li - label[:, 1], h=kernel_width[1])
+
+        kernel_mn_norm = kernel_mat0 @ kernel_mat1.T
+
+        self.info_manifold = np.empty( (label_mesh0.shape[0], label_mesh1.shape[0], feamap.shape[1]) )
+        self.label_mesh = np.empty((label_mesh0.shape[0], label_mesh1.shape[0], 2))
+
+        for m in range(label_mesh0.shape[0]):
+            for n in range(label_mesh1.shape[0]):
+                for i in range(feamap.shape[0]):
+                    temp = feamap[i] * kernel_mat0[m, i] * kernel_mat1[n, i]
+                self.info_manifold[m, n] = temp / kernel_mn_norm[m, n]
+                self.label_mesh[m, n] = np.array([label_mesh0[m], label_mesh1[n]])
+
+        self.info_manifold = self.info_manifold.reshape( (-1, feamap.shape[1]) )
+        self.label_mesh = self.label_mesh.reshape( (-1, 2) )
+
+        # fit the Sigma
+
+        return self.label_mesh.copy(), self.info_manifold.copy()
 
 class Geo_analyzer():
     def __init__(self):

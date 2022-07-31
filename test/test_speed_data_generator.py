@@ -10,7 +10,7 @@ out_data_head = 'grating_stim'
 dg = Dataset_generator()
 
 time_step = 8
-size = 70
+size = 100
 #speed_list = np.linspace(0.02, 0.12, 12)
 #ori_list = np.linspace(0, 360, 12, endpoint=False)
 speed_list = np.random.uniform(low=0.02, high=0.12, size=size)

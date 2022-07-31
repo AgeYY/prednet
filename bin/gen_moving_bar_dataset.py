@@ -52,7 +52,7 @@ dg = Dataset_generator()
 #video = hkl.load(natural_video_path)
 #dg.moving_square_on_video(video, size_rect=size_rect, time_step=time_step, out_data_head=out_data_head, speed_list=speed_list)
 
-size=70
+size=100
 out_data_head = 'grating_stim'
 dg.clear_image_folder(out_data_head)
 speed_list = np.random.uniform(low=0.02, high=0.12, size=size)

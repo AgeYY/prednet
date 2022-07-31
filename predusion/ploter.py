@@ -116,7 +116,7 @@ class Ploter_dim_reduction():
         elif name == 'scatter3D':
             return ax.scatter3D(*para, **kwargs)
 
-    def plot_dimension_reduction(self, data, plot_func='scatter', fit_label=None, colorinfo=None, title=None, save_fig=None, ax=None, fig=None, cax=None, fit=False, mode='2D', alpha=1):
+    def plot_dimension_reduction(self, data, plot_func='scatter', fit_label=None, colorinfo=None, title=None, save_fig=None, ax=None, fig=None, cax=None, fit=False, mode='2D', alpha=1, marker='o'):
         '''
         data ( [n_sample, n_feature])
         label ( [n_sample, 2] ): only 2 labels for pls_pair
@@ -140,10 +140,10 @@ class Ploter_dim_reduction():
                 cax = fig.add_axes([0.27, 0.8, 0.5, 0.05]) # colorbar
 
             if not (colorinfo is None):
-                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], c=colorinfo.flatten(), cmap="viridis", alpha=alpha)
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], c=colorinfo.flatten(), cmap="viridis", alpha=alpha, marker=marker)
                 fig.colorbar(im, cax=cax, orientation = 'horizontal')
             else:
-                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], alpha=alpha)
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], alpha=alpha, marker=marker)
 
         elif mode == '3D':
             if ax is None:
@@ -153,10 +153,10 @@ class Ploter_dim_reduction():
                 cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
 
             if not (colorinfo is None):
-                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False, alpha=alpha)
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], c=colorinfo.flatten(), cmap = "viridis", depthshade=False, alpha=alpha, marker=marker)
                 fig.colorbar(im, cax = cax, orientation = 'horizontal')
             else:
-                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], depthshade=False, alpha=alpha)
+                im = self.plot_helper(ax, plot_func, mode, data_trans[:, 0], data_trans[:, 1], data_trans[:, 2], depthshade=False, alpha=alpha, marker=marker)
 
         ax.set_title(title)
         if not (save_fig is None):
