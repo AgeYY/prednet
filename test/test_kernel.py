@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import predusion.geo_tool as geo_tool
 
-sample_size = 30
-mesh_size = 20
+sample_size = 100
+mesh_size = 30
 
 #def func(x):
 #    size = x.shape[0]

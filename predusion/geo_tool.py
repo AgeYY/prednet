@@ -436,7 +436,7 @@ class Single_geo_analyzer():
         return score
 
 class Double_geo_analyzer(Single_geo_analyzer):
-    def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=[0.01, 0.01]):
+    def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=[0.1, 0.1]):
         '''
         average feature values with similar label, which is called as info_manifold
         input:
@@ -467,7 +467,8 @@ class Double_geo_analyzer(Single_geo_analyzer):
             for n in range(label_mesh1.shape[0]):
                 for i in range(feamap.shape[0]):
                     temp = feamap[i] * kernel_mat0[m, i] * kernel_mat1[n, i]
-                self.info_manifold[m, n] = temp / kernel_mn_norm[m, n]
+                #self.info_manifold[m, n] = temp / kernel_mn_norm[m, n]
+                self.info_manifold[m, n] = temp
                 self.label_mesh[m, n] = np.array([label_mesh0[m], label_mesh1[n]])
 
         self.info_manifold = self.info_manifold.reshape( (-1, feamap.shape[1]) )
