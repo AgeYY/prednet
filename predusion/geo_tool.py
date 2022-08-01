@@ -568,3 +568,29 @@ def vector_variance(x):
     var = np.var(x, axis=0)
     var = np.sum(var)
     return var
+
+class Double_geo_analyzer(Geo_analyzer):
+    def load_data(self, feamap, label):
+        '''
+        feamap (dict): {'X': [n_observation, n_features], 'R0': [n_observation, n_features], ...}
+        label (array [n_observation, n_labels])
+        '''
+        self.feamap = feamap
+        self.label = label
+        self.num_label = label.shape[1]
+
+        # create group
+        self.ana_group = {}
+
+        for key in feamap:
+            self.ana_group[key] = {} # key is layer, this empty dict would be filled in like {(0, 1): Double_geo_analyzer} where (0, 1) indicate the combination of label_id
+
+    def fit_info_manifold_all(self, label_mesh, label_id=(0, 1), kernel_name='gaussian', kernel_width=[0.1, 0.1]):
+        '''
+        fit the info_manifold for all keys but single label
+        label_id (int): the ith label
+        '''
+        lb_id_tuple = tuple(label_id)
+        for key in self.ana_group:
+            self.ana_group[key][lb_id_tuple] = Double_geo_analyzer()
+            self.ana_group[key][lb_id_tuple].fit_info_manifold(label_mesh, self.feamap[key], self.label[lb_id_tuple], kernel_name=kernel_name, kernel_width=kernel_width)
