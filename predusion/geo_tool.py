@@ -477,6 +477,30 @@ class Double_geo_analyzer(Single_geo_analyzer):
 
         return self.label_mesh.copy(), self.info_manifold.copy()
 
+    def manifold(self, label_query, feamap, label, kernel_name='gaussian', kernel_width=[0.5, 0.5]):
+        '''
+        output a vector on the manifold which encode label_query. Same as fit_info_manifold, less efficient but more flexiable
+        label_query (array (n_query_sample, 2))
+        '''
+        pass
+
+    def manifold_decoder_score(self, X, label=None):
+        ''' Decoding X to the information using the manifold. Score of multiple output would be averaged
+        X (array [n_observations, n_features])
+        '''
+        pred = []
+        for obs in X:
+            distance = np.linalg.norm(obs - self.info_manifold, axis=1)
+            pred.append( self.label_mesh[np.argmin(distance)] )
+
+        pred = np.array(pred)
+        if label is None:
+            self.score = 0
+        else:
+            self.score = r2_score(label, pred)
+
+        return pred, self.score
+
 class Geo_analyzer():
     def __init__(self):
         pass
@@ -504,7 +528,12 @@ class Geo_analyzer():
         if label_id is None:
             sns.displot(self.label)
         else:
-            sns.displot(self.label[:, label_id])
+            try:
+                for lid in label_id:
+                    sns.displot(self.label[:, lid])
+            except:
+                sns.displot(self.label[:, label_id])
+
         plt.show()
 
     def fit_info_manifold_all(self, label_mesh, label_id=0, kernel_name='gaussian', kernel_width=0.1):
@@ -569,7 +598,7 @@ def vector_variance(x):
     var = np.sum(var)
     return var
 
-class Double_geo_analyzer(Geo_analyzer):
+class Double_layer_geo_analyzer(Geo_analyzer):
     def load_data(self, feamap, label):
         '''
         feamap (dict): {'X': [n_observation, n_features], 'R0': [n_observation, n_features], ...}
@@ -593,4 +622,17 @@ class Double_geo_analyzer(Geo_analyzer):
         lb_id_tuple = tuple(label_id)
         for key in self.ana_group:
             self.ana_group[key][lb_id_tuple] = Double_geo_analyzer()
-            self.ana_group[key][lb_id_tuple].fit_info_manifold(label_mesh, self.feamap[key], self.label[lb_id_tuple], kernel_name=kernel_name, kernel_width=kernel_width)
+            self.ana_group[key][lb_id_tuple].fit_info_manifold(label_mesh, self.feamap[key], self.label[:, lb_id_tuple], kernel_name=kernel_name, kernel_width=kernel_width)
+
+    def manifold_decoder_score_all(self, feamap_test, label_test, label_id=[0, 1]):
+        lb_id_tuple = tuple(label_id)
+        score = {}
+        for key in self.ana_group:
+            _, score[key] = self.ana_group[key][lb_id_tuple].manifold_decoder_score(feamap_test[key], label_test[:, lb_id_tuple])
+        return score
+
+    def dim_all(self, explained_var_thre, label_id):
+        dim = {} # dimensionality of the manifold
+        for key in self.ana_group:
+            _, dim[key] = self.ana_group[key][tuple(label_id)].fit_manifold_subspace(explained_var_thre)
+        return dim
