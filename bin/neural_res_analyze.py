@@ -39,7 +39,7 @@ neural_data_path = 'neural_' + out_data_head + '_R_prednet' + '.hkl'
 label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
 label_name_path = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
 
-label_id = 0
+label_id = 2
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.95
@@ -47,8 +47,9 @@ explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
 lt0_mesh = np.linspace(0, 0.12, 100) 
 lt1_mesh = np.linspace(0, 180, 100)
-lt_mesh = [lt0_mesh, lt1_mesh]
-kernel_width = [0.0001, 90]
+lt2_mesh = np.linspace(0, 5, 100)
+lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
+kernel_width = [0.0001, 45, 0.1]
 ## moving_rect2080 configurations
 #lt_mesh = np.linspace(0, 12, 100) # moving bar 2080
 #kernel_width = 0.5

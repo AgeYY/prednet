@@ -435,6 +435,79 @@ class Single_geo_analyzer():
         score = mutual_info.mutual_information_2d(pred, label, sigma=sigma, normalized=normalized)
         return score
 
+class Multiple_info_manifold(Single_geo_analyzer):
+    def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=None):
+        '''
+        average feature values with similar label, which is called as info_manifold
+        input:
+          label_mesh ([label_mesh0, label_mesh1, ...]): the final label mesh would be the cross product of these. label_mesh0 is an 1D np array. length is the number of information variables
+          feamap (array [num_sample, num_feature])
+          label (array [num_sample, n_info_variable])
+          kernel (list): length is equal to the number of information. e.g. [0.1, 0.001, 50]
+        output:
+          self.label_mesh (array [num_mesh_points, n_info_variable]): n_mesh_points = n_label_mesh0 * n_label_mesh1 * n_label_mesh2 ...
+          self.info_manifold (array [num_mesh_points, n_features])
+        '''
+        n_sample = feamap.shape[0]
+        n_info = len(label_mesh)
+        tensor_shape = [len(lmi) for lmi in label_mesh]
+        #tensor_shape.insert(0, n_sample)
+
+        if kernel_width is None:
+            kernel_width = np.ones(n_info)
+
+        kernel = []
+        for i in range(n_info):
+            kernel.append(np.empty((label_mesh[i].shape[0], n_sample)))
+            for m, lm in enumerate(label_mesh[i]):
+                kernel[i][m] = self.kernel_dic[kernel_name](li - label_mesh[i], h=kernel_width[0])
+
+        kernel_tensor = np.empty(tensor_shape)
+        #for i in range(n_sample):
+        #    for i_info in range(n_info-1):
+        #        kernel = 
+
+        kernel_mn_norm = kernel_mat0 @ kernel_mat1.T
+
+        self.info_manifold = np.empty( (label_mesh0.shape[0], label_mesh1.shape[0], feamap.shape[1]) )
+        self.label_mesh = np.empty((label_mesh0.shape[0], label_mesh1.shape[0], 2))
+        for m in range(label_mesh0.shape[0]):
+            for n in range(label_mesh1.shape[0]):
+                temp = 0
+                for i in range(feamap.shape[0]):
+                    temp = temp + feamap[i] * kernel_mat0[m, i] * kernel_mat1[n, i]
+                self.info_manifold[m, n] = temp / kernel_mn_norm[m, n]
+                self.label_mesh[m, n] = np.array([label_mesh0[m], label_mesh1[n]])
+
+        self.info_manifold = self.info_manifold.reshape( (-1, feamap.shape[1]) )
+        self.label_mesh = self.label_mesh.reshape( (-1, 2) )
+
+        return self.label_mesh.copy(), self.info_manifold.copy()
+
+    def manifold(self, label_query, feamap, label, kernel_name='gaussian', kernel_width=[0.5, 0.5]):
+        '''
+        output a vector on the manifold which encode label_query. Same as fit_info_manifold, less efficient but more flexiable
+        label_query (array (n_query_sample, 2))
+        '''
+        pass
+
+    def manifold_decoder_score(self, X, label=None):
+        ''' Decoding X to the information using the manifold. Score of multiple output would be averaged
+        X (array [n_observations, n_features])
+        '''
+        pred = []
+        for obs in X:
+            distance = np.linalg.norm(obs - self.info_manifold, axis=1)
+            pred.append( self.label_mesh[np.argmin(distance)] )
+
+        pred = np.array(pred)
+        if label is None:
+            self.score = 0
+        else:
+            self.score = r2_score(label, pred)
+
+        return pred, self.score
+
 class Double_geo_analyzer(Single_geo_analyzer):
 
     def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=[0.5, 0.5]):
@@ -448,6 +521,7 @@ class Double_geo_analyzer(Single_geo_analyzer):
           self.label_mesh, self.info_manifold
         '''
         sample_size = feamap.shape[0]
+        n_features = feamap.shape[1]
 
         label_mesh0, label_mesh1 = label_mesh
 
@@ -460,17 +534,12 @@ class Double_geo_analyzer(Single_geo_analyzer):
         for n, li in enumerate(label_mesh1):
             kernel_mat1[n] = self.kernel_dic[kernel_name](li - label[:, 1], h=kernel_width[1])
 
-        kernel_mn_norm = kernel_mat0 @ kernel_mat1.T
+        kernel_mn_norm = np.einsum(kernel_mat0, [0, 1], kernel_mat1, [2, 1], [0, 2])
 
         self.info_manifold = np.empty( (label_mesh0.shape[0], label_mesh1.shape[0], feamap.shape[1]) )
         self.label_mesh = np.empty((label_mesh0.shape[0], label_mesh1.shape[0], 2))
-        for m in range(label_mesh0.shape[0]):
-            for n in range(label_mesh1.shape[0]):
-                temp = 0
-                for i in range(feamap.shape[0]):
-                    temp = temp + feamap[i] * kernel_mat0[m, i] * kernel_mat1[n, i]
-                self.info_manifold[m, n] = temp / kernel_mn_norm[m, n]
-                self.label_mesh[m, n] = np.array([label_mesh0[m], label_mesh1[n]])
+        self.info_manifold = np.einsum(feamap, [0, 1], kernel_mat0, [2, 0], kernel_mat1, [3, 0], [2, 3, 1]) / kernel_mn_norm[..., np.newaxis]
+        self.label_mesh = np.array( np.meshgrid(label_mesh0, label_mesh1) ).transpose()
 
         self.info_manifold = self.info_manifold.reshape( (-1, feamap.shape[1]) )
         self.label_mesh = self.label_mesh.reshape( (-1, 2) )

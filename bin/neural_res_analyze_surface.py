@@ -43,10 +43,10 @@ explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
 lt0_mesh = np.linspace(0, 0.12, mesh_size) 
 lt1_mesh = np.linspace(0, 180, mesh_size)
-#lt0_mesh = np.random.uniform(0, 0.12, mesh_size) 
-#lt1_mesh = np.random.uniform(0, 180, mesh_size)
-lt_mesh = [lt0_mesh, lt1_mesh]
-kernel_width = [0.0001, 45]
+lt2_mesh = np.linspace(0, 5, 100)
+lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
+lt_mesh = [lt_mesh[i] for i in label_id]
+kernel_width = [0.0001, 45, 0.1]
 
 feamap_path = os.path.join(DATA_DIR, neural_data_path)
 label_path = os.path.join(DATA_DIR, label_path)
@@ -62,29 +62,29 @@ dataset = Layer_Dataset(feamap_path, label_path, label_name_path, explained_var_
 
 geoa = geo_tool.Double_layer_geo_analyzer()
 
-############################### Tune the kernel_width
-#(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
-#geoa.load_data(feamap_train, label_train)
-#geoa.label_dis([label_id]) # show the distribution of labels
-#
-## fit the manifold
-#geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
-## visualize infomation manifold
-#n_layer, layer_order = layer_order_helper()
-#for layer_name in layer_order:
-#    info_manifold = geoa.ana_group[layer_name][label_id].info_manifold.copy()
-#    label_mesh = geoa.ana_group[layer_name][label_id].label_mesh.copy()
-#
-#    plt_dr = Ploter_dim_reduction(method='pca', n_components=2)
-#    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, label_id[0]], mode='2D', fit=True)
-#    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id[1]], mode='2D', fig=fig, ax=ax, marker='+') # test
-#    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id[0]], mode='2D', fig=fig, ax=ax, marker='+') # test
-#    plt.show()
-#    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, label_id[1]], mode='2D', fit=True)
-#    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id[1]], mode='2D', fig=fig, ax=ax, marker='+') # test
-#    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, label_id[1]], mode='2D', fig=fig, ax=ax, marker='+') # test
-#    plt.show()
-############################### Tune the kernel_width
+############################## Tune the kernel_width
+(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
+geoa.load_data(feamap_train, label_train)
+geoa.label_dis([label_id]) # show the distribution of labels
+
+# fit the manifold
+geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
+# visualize infomation manifold
+n_layer, layer_order = layer_order_helper()
+for layer_name in layer_order:
+    info_manifold = geoa.ana_group[layer_name][label_id].info_manifold.copy()
+    label_mesh = geoa.ana_group[layer_name][label_id].label_mesh.copy()
+
+    plt_dr = Ploter_dim_reduction(method='pca', n_components=2)
+    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, 0], mode='2D', fit=True)
+    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id[1]], mode='2D', fig=fig, ax=ax, marker='+') # test
+    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, 0], mode='2D', fig=fig, ax=ax, marker='+') # test
+    plt.show()
+    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, 1], mode='2D', fit=True)
+    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id[1]], mode='2D', fig=fig, ax=ax, marker='+') # test
+    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, 1], mode='2D', fig=fig, ax=ax, marker='+') # test
+    plt.show()
+############################## Tune the kernel_width
 
 ############################ Fix the hyperparameter and repeat on different training testing sets on different random seeds
 train_ratio, test_ratio = 0.7, 0.3
