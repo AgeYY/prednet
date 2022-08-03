@@ -8,45 +8,33 @@ import predusion.geo_tool as geo_tool
 import predusion.ploter as ploter
 from predusion.ploter import Ploter_dim_reduction
 from predusion.static_dataset import Layer_Dataset, train_test_validate_split
-#from predusion.manifold_analyzer import Manifold_analyzer
 from kitti_settings import *
-import argparse
-from sklearn.linear_model import Ridge as scikit_ridge
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--data_head', default='moving_bar20', type=str,
-                    help='head of the dataset')
-parser.add_argument('--nt', default=12, type=int, help='number of frames per video')
-parser.add_argument('--cut_time', nargs=2, default=None, type=int, help='analyze the geometric property only limit with this time interval. unit is frame')
-parser.add_argument('--cut_speed', nargs=2, default=None, type=int, help='analyze the geometric property only limit with this speed interval. unit is the rank of speeds, from lowest to the highest')
-parser.add_argument('--n_com_procrustes', default=3, type=int, help='number of dimensions for procrustes (comparing the shape similarity across different time points.)')
-
-arg = parser.parse_args()
-
-out_data_head = arg.data_head
-cut_time = arg.cut_time
-n_com_procrustes = arg.n_com_procrustes
-nt = arg.nt
 
 out_data_head = 'grating_stim'
+#out_data_head = 'dot_stim'
 output_mode = ['R0', 'R1', 'R2', 'R3']
 neural_data_path = 'neural_' + out_data_head + '_R_prednet' + '.hkl'
 label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
 label_name_path = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
 
-mesh_size = 50
-label_id = (0, 1)
+mesh_size = 100
+label_id = (0, 1) # only fit manifold about these information variables.
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
-lt0_mesh = np.linspace(0, 0.12, mesh_size) 
+lt0_mesh = np.linspace(0, 0.15, mesh_size) 
 lt1_mesh = np.linspace(0, 180, mesh_size)
 lt2_mesh = np.linspace(0, 5, 100)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
-lt_mesh = [lt_mesh[i] for i in label_id]
 kernel_width = [0.0001, 45, 0.1]
+
+## drifting grating configurations
+#lt0_mesh = np.linspace(0, 8, mesh_size) # the range should be larger than data
+#lt1_mesh = np.linspace(0, 6, mesh_size)
+#lt_mesh = [lt0_mesh, lt1_mesh]
+#kernel_width = [0.5, 1]
 
 feamap_path = os.path.join(DATA_DIR, neural_data_path)
 label_path = os.path.join(DATA_DIR, label_path)
@@ -60,7 +48,7 @@ def layer_order_helper():
 
 dataset = Layer_Dataset(feamap_path, label_path, label_name_path, explained_var_thre=explained_var_thre_pca_all_data)
 
-geoa = geo_tool.Double_layer_geo_analyzer()
+geoa = geo_tool.Layer_manifold()
 
 ############################## Tune the kernel_width
 (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
@@ -76,27 +64,23 @@ for layer_name in layer_order:
     label_mesh = geoa.ana_group[layer_name][label_id].label_mesh.copy()
 
     plt_dr = Ploter_dim_reduction(method='pca', n_components=2)
-    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, 0], mode='2D', fit=True)
-    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id[1]], mode='2D', fig=fig, ax=ax, marker='+') # test
-    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, 0], mode='2D', fig=fig, ax=ax, marker='+') # test
-    plt.show()
-    fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, 1], mode='2D', fit=True)
-    #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, label_id[1]], mode='2D', fig=fig, ax=ax, marker='+') # test
-    fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, 1], mode='2D', fig=fig, ax=ax, marker='+') # test
-    plt.show()
+    for lb_id in label_id:
+        vmin, vmax = label_mesh[:, lb_id].min(), label_mesh[:, lb_id].max()
+        fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, lb_id], mode='2D', fit=True, vmin=vmin, vmax=vmax)
+        fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, lb_id], mode='2D', fig=fig, ax=ax, marker='+', vmin=vmin, vmax=vmax) # test
+        #fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, lb_id], mode='2D', fig=fig, ax=ax, marker='+') # test
+        plt.show()
 ############################## Tune the kernel_width
 
 ############################ Fix the hyperparameter and repeat on different training testing sets on different random seeds
 train_ratio, test_ratio = 0.7, 0.3
-n_bootstrap = 10
+n_bootstrap = 20
 dim, score = {}, {}
 for i in range(n_bootstrap):
     (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
     geoa.load_data(feamap_train, label_train)
     geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
-    #score_boots = geoa.linear_regression_score_all(explained_var_thre, feamap_test, label_test, label_id) # measuring the amount of information in the subspace of the manifold
     score_boots = geoa.manifold_decoder_score_all(feamap_test, label_test, label_id)
-    #score_boots = geoa.mutual_info_all(feamap_test, label_test, label_id, sigma=kernel_width[label_id])
     dim_boots = geoa.dim_all(explained_var_thre, label_id)
 
     for key in dim_boots:

@@ -339,11 +339,11 @@ class Single_geo_analyzer():
 
     @staticmethod
     def bin_kernel(u, h=0.1):
-        return np.linalg.norm(u) <= h / 2
+        return np.abs(u) <= h / 2
 
     @staticmethod
     def gaussian_kernel(u, h=0.1):
-        return np.exp( - u**2 / 2.0 / h) / np.sqrt(2 * np.pi * h)
+        return np.exp( - u**2 / 2.0 / h)
 
     @staticmethod
     def pls_dim_reduction(feamap, label):
@@ -396,7 +396,6 @@ class Single_geo_analyzer():
         self.pca = PCA(n_components=self.dim)
         self.pca.fit(self.info_manifold)
         return self.pca, self.dim
-
 
     def linear_regression_score(self, explained_var_thre, feamap_train, label_train, feamap_test, label_test):
         '''
@@ -508,7 +507,18 @@ class Multiple_info_manifold(Single_geo_analyzer):
 
         return pred, self.score
 
-class Double_geo_analyzer(Single_geo_analyzer):
+class Data_manifold():
+
+    def __init__(self):
+        self.kernel_dic = {'bin': self.bin_kernel, 'gaussian': self.gaussian_kernel}
+
+    @staticmethod
+    def bin_kernel(u, h=0.1):
+        return np.abs(u) <= h / 2
+
+    @staticmethod
+    def gaussian_kernel(u, h=0.1):
+        return np.exp( - u**2 / 2.0 / h)
 
     def fit_info_manifold(self, label_mesh, feamap, label, kernel_name='gaussian', kernel_width=[0.5, 0.5]):
         '''
@@ -520,31 +530,65 @@ class Double_geo_analyzer(Single_geo_analyzer):
         output:
           self.label_mesh, self.info_manifold
         '''
-        sample_size = feamap.shape[0]
-        n_features = feamap.shape[1]
 
-        label_mesh0, label_mesh1 = label_mesh
+        if kernel_width is None:
+            kernel_width = np.ones(n_info)
 
-        kernel_mat0 = np.empty((label_mesh0.shape[0], sample_size))
-        kernel_mat1 = np.empty((label_mesh1.shape[0], sample_size))
+        n_label = len(label_mesh) # number of layers, also equal to the intrinsic dim of the manifold
 
-        for m, li in enumerate(label_mesh0):
-            kernel_mat0[m] = self.kernel_dic[kernel_name](li - label[:, 0], h=kernel_width[0])
+        kernel = [] # create kernel for every label
+        for i in range(n_label):
+            lb_meshx, lb_meshy = np.meshgrid(label_mesh[i], label[:, i])
+            lb_mesh_diff = lb_meshx - lb_meshy
+            kernel.append( self.kernel_dic[kernel_name](lb_mesh_diff, h=kernel_width[i]) )
 
-        for n, li in enumerate(label_mesh1):
-            kernel_mat1[n] = self.kernel_dic[kernel_name](li - label[:, 1], h=kernel_width[1])
+        kernel_norm_command = [] # denominator
+        for i in range(n_label):
+            kernel_norm_command.append(kernel[i])
+            kernel_norm_command.append([0, i+1])
+        end = [i+1 for i in range(n_label)]
+        kernel_norm_command.append(end)
 
-        kernel_mn_norm = np.einsum(kernel_mat0, [0, 1], kernel_mat1, [2, 1], [0, 2])
+        kernel_norm = np.einsum(*kernel_norm_command)
+        # the resulting command looks like: kernel_norm = np.einsum(kernel[0], [0, 1], kernel[1], [0, 2], [1, 2])
 
-        self.info_manifold = np.empty( (label_mesh0.shape[0], label_mesh1.shape[0], feamap.shape[1]) )
-        self.label_mesh = np.empty((label_mesh0.shape[0], label_mesh1.shape[0], 2))
-        self.info_manifold = np.einsum(feamap, [0, 1], kernel_mat0, [2, 0], kernel_mat1, [3, 0], [2, 3, 1]) / kernel_mn_norm[..., np.newaxis]
-        self.label_mesh = np.array( np.meshgrid(label_mesh0, label_mesh1) ).transpose()
+        info_manifold_command = kernel_norm_command # just rename it. Ready to calculate numerator
+        info_manifold_command.pop()
+        info_manifold_command.append(feamap)
+        info_manifold_command.append([0, n_label+1])
+
+        end = [i+1 for i in range(n_label+1)]
+        info_manifold_command.append(end)
+
+        self.info_manifold = np.einsum(*info_manifold_command) / kernel_norm[..., np.newaxis]
+        # the resulting command looks like: self.info_manifold = np.einsum(kernel[0], [0, 1], kernel[1], [0, 2], feamap, [0, 3], [1, 2, 3]) / kernel_mn_norm[..., np.newaxis]
+        self.label_mesh = np.array( np.meshgrid(*label_mesh) ).transpose()
 
         self.info_manifold = self.info_manifold.reshape( (-1, feamap.shape[1]) )
-        self.label_mesh = self.label_mesh.reshape( (-1, 2) )
+        self.label_mesh = self.label_mesh.reshape( (-1, n_label) )
 
         return self.label_mesh.copy(), self.info_manifold.copy()
+
+    def fit_manifold_subspace(self, explained_var_thre):
+        '''
+        please firstly fit the self.info_manifold
+        return:
+          dim (int): dimensionality
+        '''
+
+        # if self.info_manifold not defined
+        try: self.info_manifold
+        except NameError:
+            print('Please fit the information manifold first\n')
+            sys.exit()
+
+        pca = PCA(n_components=None)
+        pca.fit(self.info_manifold)
+        var_explained = np.cumsum(pca.explained_variance_ratio_)
+        self.dim = np.argmax(var_explained>explained_var_thre) + 1
+        self.pca = PCA(n_components=self.dim)
+        self.pca.fit(self.info_manifold)
+        return self.pca, self.dim
 
     def manifold(self, label_query, feamap, label, kernel_name='gaussian', kernel_width=[0.5, 0.5]):
         '''
@@ -559,7 +603,7 @@ class Double_geo_analyzer(Single_geo_analyzer):
         '''
         pred = []
         for obs in X:
-            distance = np.linalg.norm(obs - self.info_manifold, axis=1)
+            distance = np.linalg.norm(obs - self.info_manifold, axis=-1)
             pred.append( self.label_mesh[np.argmin(distance)] )
 
         pred = np.array(pred)
@@ -569,6 +613,26 @@ class Double_geo_analyzer(Single_geo_analyzer):
             self.score = r2_score(label, pred)
 
         return pred, self.score
+
+    def mutual_info_score(self, X, label, sigma=1, normalized=True):
+        pred, _ = self.manifold_decoder_score(X, label)
+        score = mutual_info.mutual_information_2d(pred, label, sigma=sigma, normalized=normalized)
+        return score
+
+    #def linear_regression_score(self, explained_var_thre, feamap_train, label_train, feamap_test, label_test):
+    #    '''
+    #    feamap_train ([n_observation, n_features]):
+    #    label_train (n_observation): only one label
+    #    return:
+    #      the amount of information encoded by the subspace of the manifold, as measured by: 1. find the pca space expalins explained_var_thre 2. linear regression 3. test coefficient of determination of the prediction
+    #    '''
+    #    self.fit_manifold_subspace(explained_var_thre)
+    #    feamap_proj_train, feamap_proj_test = self.pca.transform(feamap_train), self.pca.transform(feamap_test)
+    #    self.clf = scikit_ridge()
+    #    self.clf.fit(feamap_proj_train, label_train)
+    #    pred = self.clf.predict(feamap_proj_test)
+    #    self.score = self.clf.score(feamap_proj_test, label_test)
+    #    return pred, self.score
 
 class Geo_analyzer():
     def __init__(self):
@@ -602,7 +666,6 @@ class Geo_analyzer():
                     sns.displot(self.label[:, lid])
             except:
                 sns.displot(self.label[:, label_id])
-
         plt.show()
 
     def fit_info_manifold_all(self, label_mesh, label_id=0, kernel_name='gaussian', kernel_width=0.1):
@@ -667,7 +730,7 @@ def vector_variance(x):
     var = np.sum(var)
     return var
 
-class Double_layer_geo_analyzer(Geo_analyzer):
+class Layer_manifold(Geo_analyzer):
     def load_data(self, feamap, label):
         '''
         feamap (dict): {'X': [n_observation, n_features], 'R0': [n_observation, n_features], ...}
@@ -677,11 +740,7 @@ class Double_layer_geo_analyzer(Geo_analyzer):
         self.label = label
         self.num_label = label.shape[1]
 
-        # create group
-        self.ana_group = {}
-
-        for key in feamap:
-            self.ana_group[key] = {} # key is layer, this empty dict would be filled in like {(0, 1): Double_geo_analyzer} where (0, 1) indicate the combination of label_id
+        self.ana_group = {key: {} for key in feamap} # create empty group, key indicate layers. this empty dict would be filled in like {(0, 1): Data_manifold} where (0, 1) indicate the combination of label_id
 
     def fit_info_manifold_all(self, label_mesh, label_id=(0, 1), kernel_name='gaussian', kernel_width=[0.1, 0.1]):
         '''
@@ -689,9 +748,12 @@ class Double_layer_geo_analyzer(Geo_analyzer):
         label_id (int): the ith label
         '''
         lb_id_tuple = tuple(label_id)
+        l_mesh = [label_mesh[i] for i in label_id]
+        kw = [kernel_width[i] for i in label_id]
+
         for key in self.ana_group:
-            self.ana_group[key][lb_id_tuple] = Double_geo_analyzer()
-            self.ana_group[key][lb_id_tuple].fit_info_manifold(label_mesh, self.feamap[key], self.label[:, lb_id_tuple], kernel_name=kernel_name, kernel_width=kernel_width)
+            self.ana_group[key][lb_id_tuple] = Data_manifold()
+            self.ana_group[key][lb_id_tuple].fit_info_manifold(l_mesh, self.feamap[key], self.label[:, lb_id_tuple], kernel_name=kernel_name, kernel_width=kw)
 
     def manifold_decoder_score_all(self, feamap_test, label_test, label_id=[0, 1]):
         lb_id_tuple = tuple(label_id)
@@ -705,3 +767,24 @@ class Double_layer_geo_analyzer(Geo_analyzer):
         for key in self.ana_group:
             _, dim[key] = self.ana_group[key][tuple(label_id)].fit_manifold_subspace(explained_var_thre)
         return dim
+
+    def label_dis(self, label_id=None):
+        '''show the histogram of label distribution'''
+        if label_id is None:
+            sns.displot(self.label)
+        else:
+            try:
+                for lid in label_id:
+                    sns.displot(self.label[:, lid])
+            except:
+                sns.displot(self.label[:, label_id])
+        plt.show()
+
+    #def mutual_info_all(self, feamap_test, label_test, label_id=(0), sigma=[1], normalized=True):
+    #    lb_id_tuple = tuple(label_id)
+    #    sig = [sigma[i] for i in label_id]
+
+    #    mi = {} # dimensionality of the manifold
+    #    for key in self.ana_group:
+    #        mi[key] = self.ana_group[key][lb_id_tuple].mutual_info_score(feamap_test[key], label_test[:, lb_id_tuple], sigma=sig, normalized=normalized)
+    #    return mi

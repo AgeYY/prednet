@@ -70,8 +70,8 @@ fig = plt.figure()
 ax = plt.axes(projection='3d')
 ax.scatter3D(y[:, 0], y[:, 1], y[:, 2], label='sample', color='grey')
 
-_, mean_y = geo_ana.fit_info_manifold([x1_mesh, x2_mesh], y, label, kernel_name='bin')
-ax.scatter3D(mean_y[:, 0], mean_y[:, 1], mean_y[:, 2], label='bin kernel')
+#_, mean_y = geo_ana.fit_info_manifold([x1_mesh, x2_mesh], y, label, kernel_name='bin', kernel_width=[0.5, 0.5])
+#ax.scatter3D(mean_y[:, 0], mean_y[:, 1], mean_y[:, 2], label='bin kernel')
 
 _, mean_y = geo_ana.fit_info_manifold([x1_mesh, x2_mesh], y, label, kernel_name='gaussian')
 ax.scatter3D(mean_y[:, 0], mean_y[:, 1], mean_y[:, 2], label='gaussian kernel')
