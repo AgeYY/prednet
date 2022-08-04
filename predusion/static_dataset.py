@@ -165,6 +165,6 @@ def train_test_validate_split(dataset, frac_train, frac_test, random_seed=42):
     the frac_validate is 1 - frac_train - frac_test
     '''
     l = len(dataset)
-    rand_idx = np.random.permutation(l)
+    rand_idx = np.random.RandomState(seed=random_seed).permutation(l)
     train_idx, test_idx, validate_idx = np.split(rand_idx, [int(frac_train * l), int((frac_train + frac_test) * l)])
     return dataset[train_idx], dataset[test_idx], dataset[validate_idx]

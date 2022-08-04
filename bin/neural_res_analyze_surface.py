@@ -3,8 +3,9 @@ import os
 import numpy as np
 import hickle as hkl
 import matplotlib.pyplot as plt
+from sklearn.model_selection import GridSearchCV
 
-import predusion.geo_tool as geo_tool
+import predusion.manifold as manifold
 import predusion.ploter as ploter
 from predusion.ploter import Ploter_dim_reduction
 from predusion.static_dataset import Layer_Dataset, train_test_validate_split
@@ -18,17 +19,17 @@ label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
 label_name_path = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
 
 mesh_size = 100
-label_id = (0, 1) # only fit manifold about these information variables.
+label_id = (0,) # only fit manifold about these information variables.
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
-lt0_mesh = np.linspace(0, 0.15, mesh_size) 
-lt1_mesh = np.linspace(0, 180, mesh_size)
+lt0_mesh = np.linspace(0, 0.15, mesh_size)
+lt1_mesh = np.linspace(0, 90, mesh_size)
 lt2_mesh = np.linspace(0, 5, 100)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
-kernel_width = [0.0001, 45, 0.1]
+kernel_width = [0.00001, 40, 0.1]
 
 ## drifting grating configurations
 #lt0_mesh = np.linspace(0, 8, mesh_size) # the range should be larger than data
@@ -48,13 +49,17 @@ def layer_order_helper():
 
 dataset = Layer_Dataset(feamap_path, label_path, label_name_path, explained_var_thre=explained_var_thre_pca_all_data)
 
-geoa = geo_tool.Layer_manifold()
+geoa = manifold.Layer_manifold()
 
-############################## Tune the kernel_width
-(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
+############################### Use grid search in a single train/validate/test split to find optimal kernel_width
+kernel_width_list = [ [0.1], [0.01], [0.001], [0.0001], [0.00001], [0.000001], [0.0000001]]
+#kernel_width_list = [ [5], [10], [30], [50], [70], [90], [110] ]
+(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=42)
+score = geoa.search_kernel_width(lt_mesh, feamap_train, label_train, feamap_validate, label_validate, label_id, kernel_width_list)
+[print(key,':',value) for key, value in score.items()]
+
+# visualize testing
 geoa.load_data(feamap_train, label_train)
-geoa.label_dis([label_id]) # show the distribution of labels
-
 # fit the manifold
 geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
 # visualize infomation manifold
@@ -64,20 +69,20 @@ for layer_name in layer_order:
     label_mesh = geoa.ana_group[layer_name][label_id].label_mesh.copy()
 
     plt_dr = Ploter_dim_reduction(method='pca', n_components=2)
-    for lb_id in label_id:
-        vmin, vmax = label_mesh[:, lb_id].min(), label_mesh[:, lb_id].max()
-        fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, lb_id], mode='2D', fit=True, vmin=vmin, vmax=vmax)
-        fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, lb_id], mode='2D', fig=fig, ax=ax, marker='+', vmin=vmin, vmax=vmax) # test
-        #fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, lb_id], mode='2D', fig=fig, ax=ax, marker='+') # test
+    for i, lb_id in enumerate(label_id):
+        vmin, vmax = label_mesh[:, i].min(), label_mesh[:, i].max()
+        fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh[:, i], mode='2D', fit=True, vmin=vmin, vmax=vmax)
+        #fig, ax =  plt_dr.plot_dimension_reduction(feamap_validate[layer_name], colorinfo=label_validate[:, lb_id], mode='2D', fig=fig, ax=ax, marker='+', vmin=vmin, vmax=vmax) # test
+        fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, lb_id], mode='2D', fig=fig, ax=ax, marker='+', vmin=vmin, vmax=vmax) # test
         plt.show()
-############################## Tune the kernel_width
+############################## visualize manifold
 
 ############################ Fix the hyperparameter and repeat on different training testing sets on different random seeds
 train_ratio, test_ratio = 0.7, 0.3
 n_bootstrap = 20
 dim, score = {}, {}
 for i in range(n_bootstrap):
-    (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio)
+    (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=None)
     geoa.load_data(feamap_train, label_train)
     geoa.fit_info_manifold_all(lt_mesh, label_id, kernel_width=kernel_width)
     score_boots = geoa.manifold_decoder_score_all(feamap_test, label_test, label_id)
