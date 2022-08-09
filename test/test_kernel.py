@@ -1,12 +1,18 @@
 # test the kernel method for computing the conditional expectation
 import numpy as np
 import matplotlib.pyplot as plt
-import predusion.manifold as manifold
+import predusion.manifold as mfd
+
+############################## cProfile speed testing
+import cProfile, pstats
+pr = cProfile.Profile()
+pr.enable()
+############################## cProfile speed testing
 
 sample_size = 100
-mesh_size = 30
+mesh_size = 1000
 
-#### test double geo analyzer
+#### generating feamap and label
 def func(x1, x2):
     '''
     x ([n_observation, n_independent_variable])
@@ -24,26 +30,41 @@ x2 = np.random.normal(0, 1, sample_size) # this is label
 label = np.array([x1, x2]).T
 
 y = func(x1, x2) # this is is the feature maps
-y = add_func_noise(y)
+feamap = add_func_noise(y)
 
+#### generate mesh points
 x1_mesh = np.random.normal(0, 1, mesh_size) # this is label
 x2_mesh = np.random.normal(0, 1, mesh_size) # this is label
-#x1_mesh = np.linspace(-1, 1, mesh_size) # this is label
-#x2_mesh = np.linspace(-1, 1, mesh_size) # this is label
-y_mesh_true = func(x1_mesh, x2_mesh)
 
-geo_ana = manifold.Data_manifold()
+#### calculate the ground turth for these mesh points
+x1_mesh_4_ground, x2_mesh_4_ground = np.meshgrid(x1_mesh, x2_mesh)
+manifold_mesh_true = func(x1_mesh_4_ground.flatten(), x2_mesh_4_ground.flatten())
+
+#### fit the manifold
+kernel_width = [0.1, 0.1]
+
+geo_ana = mfd.Data_manifold()
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-ax.scatter3D(y[:, 0], y[:, 1], y[:, 2], label='sample', color='grey')
+ax.scatter3D(feamap[:, 0], feamap[:, 1], feamap[:, 2], label='data points', color='grey')
 
-#_, mean_y = geo_ana.fit_info_manifold([x1_mesh, x2_mesh], y, label, kernel_name='bin', kernel_width=[0.5, 0.5])
-#ax.scatter3D(mean_y[:, 0], mean_y[:, 1], mean_y[:, 2], label='bin kernel')
+geo_ana.params['kernel'] = 'gaussian'
+geo_ana.params['kernel_width'] = kernel_width
+_, manifold_fit = geo_ana.fit_by_label_grid_mesh([x1_mesh, x2_mesh], feamap, label)
+ax.scatter3D(manifold_fit[:, 0], manifold_fit[:, 1], manifold_fit[:, 2], label='gaussian kernel ungrided label')
 
-_, mean_y = geo_ana.fit_info_manifold([x1_mesh, x2_mesh], y, label, kernel_name='gaussian')
-ax.scatter3D(mean_y[:, 0], mean_y[:, 1], mean_y[:, 2], label='gaussian kernel')
+label_mesh = np.array( np.meshgrid(x1_mesh, x2_mesh) ).transpose().reshape(-1, 2) # this is used for testing fit_by_label
+_, manifold_fit = geo_ana.fit_by_label(label_mesh, feamap, label)
+ax.scatter3D(manifold_fit[:, 0], manifold_fit[:, 1], manifold_fit[:, 2], label='gaussian kernel grided label')
 
-ax.scatter3D(y_mesh_true[:, 0], y_mesh_true[:, 1], y_mesh_true[:, 2], label='ground true')
+############################## cProfile speed testing
+pr.disable()
+sortby = 'cumtime'
+ps = pstats.Stats(pr).sort_stats(sortby)
+ps.print_stats(10)
+############################## cProfile speed testing
+
+#ax.scatter3D(manifold_mesh_true[:, 0], manifold_mesh_true[:, 1], manifold_mesh_true[:, 2], label='ground true')
 plt.legend()
-plt.show()
+#plt.show()

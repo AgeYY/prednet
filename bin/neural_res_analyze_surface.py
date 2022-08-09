@@ -19,7 +19,7 @@ label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
 label_name_path = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
 
 mesh_size = 100
-label_id = (0,) # only fit manifold about these information variables.
+label_id = (0, 1) # only fit manifold about these information variables.
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.90
@@ -27,9 +27,9 @@ explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
 lt0_mesh = np.linspace(0, 0.15, mesh_size)
 lt1_mesh = np.linspace(0, 90, mesh_size)
-lt2_mesh = np.linspace(0, 5, 100)
+lt2_mesh = np.linspace(0, 5, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
-kernel_width = [0.00001, 40, 0.1]
+kernel_width = [0.0001, 60, 0.1]
 
 ## drifting grating configurations
 #lt0_mesh = np.linspace(0, 8, mesh_size) # the range should be larger than data
@@ -52,11 +52,11 @@ dataset = Layer_Dataset(feamap_path, label_path, label_name_path, explained_var_
 geoa = manifold.Layer_manifold()
 
 ############################### Use grid search in a single train/validate/test split to find optimal kernel_width
-kernel_width_list = [ [0.1], [0.01], [0.001], [0.0001], [0.00001], [0.000001], [0.0000001]]
-#kernel_width_list = [ [5], [10], [30], [50], [70], [90], [110] ]
+#kernel_width_list = [ [0.1], [0.01], [0.001], [0.0001], [0.00001], [0.000001], [0.0000001]]
+###kernel_width_list = [ [5], [10], [30], [50], [70], [90], [110] ]
 (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=42)
-score = geoa.search_kernel_width(lt_mesh, feamap_train, label_train, feamap_validate, label_validate, label_id, kernel_width_list)
-[print(key,':',value) for key, value in score.items()]
+#score = geoa.search_kernel_width(lt_mesh, feamap_train, label_train, feamap_validate, label_validate, label_id, kernel_width_list)
+#[print(key,':',value) for key, value in score.items()]
 
 # visualize testing
 geoa.load_data(feamap_train, label_train)
