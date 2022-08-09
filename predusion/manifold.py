@@ -11,8 +11,12 @@ from scipy.stats import multivariate_normal
 class Data_manifold():
 
     def __init__(self, kernel_width=None, kernel_name='gaussian'):
+        '''
+        kernel_width is sigma square
+        '''
         self.kernel_dic = {'bin': self.bin_kernel, 'gaussian': self.gaussian_kernel}
-        self.params = {'kernel': kernel_name, 'kernel_width': kernel_width}
+        self.kernel_width = kernel_width
+        self.kernel_name = kernel_name
 
     @staticmethod
     def bin_kernel(u, h=0.1):
@@ -30,19 +34,22 @@ class Data_manifold():
 
         power = np.einsum(x, [0, 1, 2], inv_cov, [0, 3], x, [3, 1, 2], [1, 2])
 
-        return 1.0 / np.power(2 * np.pi, dim/2.0) / np.prod(h) * np.exp(-power)
+        return np.exp(-power) # normalization will always be cancelled out
 
     def build_kernel(self, query_label, feamap, label):
         '''
         building kernels for fit_by_label
+          query_label ( array [n_query_points, n_info] )
+          feamap (array [num_sample, num_feature])
+          label (array [num_sample, 2])
         '''
         self.query_label = query_label
         self.feamap = feamap
         self.label = label
 
-        if self.params['kernel_width'] is None:
+        if self.kernel_width is None:
             n_info = self.label.shape[1]
-            self.params['kernel_width'] = np.ones(n_info)
+            self.kernel_width = np.ones(n_info)
         n_label = query_label.shape[1] # number of layers, also equal to the intrinsic dim of the manifold
 
         self.kernel = [] # create kernel for every label
@@ -51,79 +58,43 @@ class Data_manifold():
         for i in range(n_label):
             lb_meshx, lb_meshy = np.meshgrid(query_label[:, i], label[:, i])
             lb_mesh_diff.append(lb_meshx - lb_meshy)
-        lb_mesh_diff = np.array(lb_mesh_diff)
-        self.kernel = self.mul_gaussian_kernel(lb_mesh_diff, h=self.params['kernel_width'])
+        self.lb_mesh_diff = np.array(lb_mesh_diff) # [n_info, n_sample, n_query]
+        self.kernel = self.mul_gaussian_kernel(self.lb_mesh_diff, h=self.kernel_width) # [n_sample, n_query]
 
-    def fit_by_label_old(self):
-        n_label = self.query_label.shape[1]
-
-        kernel_norm_command = [] # denominator
-        for i in range(n_label):
-            kernel_norm_command.append(self.kernel[i])
-            kernel_norm_command.append([0, 1])
-        end = [1]
-        kernel_norm_command.append(end)
-
-        kernel_norm = np.einsum(*kernel_norm_command)
-        # the resulting command looks like: kernel_norm = np.einsum(kernel[0], [0, 1], kernel[1], [0, 1], [1])
-
-        info_manifold_command = kernel_norm_command # just rename it. Ready to calculate numerator
-        info_manifold_command.pop()
-        info_manifold_command.append(self.feamap)
-        info_manifold_command.append([0, 2])
-
-        end = [1, 2]
-        info_manifold_command.append(end)
-        self.info_manifold = np.einsum(*info_manifold_command) / kernel_norm[..., np.newaxis]
-        # the resulting command looks like: self.info_manifold = np.einsum(kernel[0], [0, 1], kernel[1], [0, 1], feamap, [0, 2], [1, 2]) / kernel_mn_norm[..., np.newaxis]
-        self.label_mesh = self.query_label.copy()
-
-        return self.label_mesh.copy(), self.info_manifold.copy()
-
-    def fit_by_label_new(self):
-        '''
-        fitting the manifold value at query_label. This is similar with fit_by_label_grid_mesh, but no need to grid query label. This function is more flexible for handling nongrid inquery, yet less efficient (takes twice of time if query_label = grid mesh of the raw_label_mesh)
-        query_label ( array [n_query_points, n_info] )
-        '''
-        #n_label = self.query_label.shape[1]
-
-        #kernel_norm_command = [] # denominator
-        #for i in range(n_label):
-        #    kernel_norm_command.append(self.kernel[i])
-        #    kernel_norm_command.append([0, 1])
-        #end = [1]
-        #kernel_norm_command.append(end)
-
-        #kernel_norm = np.einsum(*kernel_norm_command)
-        ## the resulting command looks like: kernel_norm = np.einsum(kernel[0], [0, 1], kernel[1], [0, 1], [1])
-
-        #info_manifold_command = kernel_norm_command # just rename it. Ready to calculate numerator
-        #info_manifold_command.pop()
-        #info_manifold_command.append(self.feamap)
-        #info_manifold_command.append([0, 2])
-
-        #end = [1, 2]
-        #info_manifold_command.append(end)
-        #self.info_manifold = np.einsum(*info_manifold_command) / kernel_norm[..., np.newaxis]
-        ## the resulting command looks like: self.info_manifold = np.einsum(kernel[0], [0, 1], kernel[1], [0, 1], feamap, [0, 2], [1, 2]) / kernel_mn_norm[..., np.newaxis]
+    def fit_by_label(self):
+        '''fit the manifold, remember to first build the kernel'''
         kernel_norm = np.sum(self.kernel, axis=0)
-        self.info_manifold = np.dot(self.kernel.T, self.feamap) / kernel_norm[..., np.newaxis]
+        self.info_manifold = self.kernel.T @ self.feamap / kernel_norm[..., np.newaxis]
         self.label_mesh = self.query_label.copy()
 
         return self.label_mesh.copy(), self.info_manifold.copy()
+
+    def tangent_vector(self, label_id=0):
+        '''
+        label_id (int or 'all'): tangent vector of which column of information variables
+        '''
+        # 0 - n_sample, 1 - n_feature, 2 - n_query
+        xk = np.einsum(self.feamap, [0, 1], self.kernel, [0, 2], [1, 2])
+        xkv = np.einsum(self.feamap, [0, 1], self.kernel, [0, 2], self.lb_mesh_diff[label_id], [0, 2], [2, 1])
+        k = np.sum(self.kernel, axis=0)
+        kv = np.einsum(self.kernel, [0, 2], self.lb_mesh_diff[label_id], [0, 2], [2])
+        term1 = np.einsum(xk, [1, 2], kv, [2], [2, 1])
+        term2 = np.einsum(xkv, [2, 1], k, [2], [2, 1])
+        vec = 1.0 / self.kernel_width[label_id] * (term1 - term2) / (k**2)[..., np.newaxis]
+        return vec
 
     def fit_by_label_grid_mesh(self, raw_label_mesh, feamap, label):
         '''
-        Please load_raw_label_mesh firstly. average feature values with similar label, which is called as info_manifold
+        average feature values with similar label, which is called as info_manifold. slightly faster than fit_by_label. recommend to use fit_by_label
         input:
           feamap (array [num_sample, num_feature])
           label (array [num_sample, 2])
         output:
           self.label_mesh, self.info_manifold
         '''
-        if self.params['kernel_width'] is None:
+        if self.kernel_width is None:
             n_info = label.shape[1]
-            self.params['kernel_width'] = np.ones(n_info)
+            self.kernel_width = np.ones(n_info)
 
         n_label = len(raw_label_mesh) # number of layers, also equal to the intrinsic dim of the manifold
 
@@ -131,7 +102,7 @@ class Data_manifold():
         for i in range(n_label):
             lb_meshx, lb_meshy = np.meshgrid(raw_label_mesh[i], label[:, i])
             lb_mesh_diff = lb_meshx - lb_meshy
-            kernel.append( self.kernel_dic[self.params['kernel']](lb_mesh_diff, h=self.params['kernel_width'][i]) )
+            kernel.append( self.kernel_dic[self.kernel_name](lb_mesh_diff, h=self.kernel_width[i]) )
 
         kernel_norm_command = [] # denominator
         for i in range(n_label):
