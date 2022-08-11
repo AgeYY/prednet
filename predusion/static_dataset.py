@@ -168,3 +168,68 @@ def train_test_validate_split(dataset, frac_train, frac_test, random_seed=42):
     rand_idx = np.random.RandomState(seed=random_seed).permutation(l)
     train_idx, test_idx, validate_idx = np.split(rand_idx, [int(frac_train * l), int((frac_train + frac_test) * l)])
     return dataset[train_idx], dataset[test_idx], dataset[validate_idx]
+
+class Toy_Manifold_Dataset():
+    @staticmethod
+    def manifold(label):
+        '''
+        input:
+          label ([n_observation, 2])
+        output:
+          feamap ([n_observation, 3])
+        '''
+        x1, x2 = label[:, 0], label[:, 1]
+        y1 = x1
+        y2 = 3 * x2
+        y3 = x1*x1 + x2*x2
+        feamap = np.array([y1, y2, y3]).T
+        return feamap
+
+    @staticmethod
+    def add_noise(y, scale=0.4):
+        return y + np.random.normal(0, scale, y.shape)
+
+    def generate_data(self, train_size, test_size, mean=0, var=1, noise_scale=0.4, test_label_method='linspace'):
+        '''var is standard deviation'''
+        train_label = np.random.normal(mean, var, [train_size, 2])
+        train_feamap = self.manifold(train_label)
+        train_feamap = self.add_noise(train_feamap, scale=noise_scale)
+
+        if test_label_method == 'random':
+            test_label = np.random.normal(mean, var, [test_size, 2])
+        elif test_label_method == 'linspace':
+            test_lb_arr = np.linspace(-var, var, test_size)
+            test_label_0, test_label_1 = np.meshgrid(test_lb_arr, test_lb_arr, indexing='ij')
+            test_label = np.array([test_label_0.flatten(), test_label_1.flatten()]).T
+
+        test_true_feamap = self.manifold(test_label)
+        test_feamap = self.add_noise(test_true_feamap, scale=noise_scale)
+
+        return train_label, train_feamap, test_label, test_feamap, test_true_feamap
+
+    @staticmethod
+    def tangent_vec(label):
+        '''
+        input:
+          label [n_sample, 2]
+        output:
+          vec [n_sample, 2, 3]: tangent vectors along two directions. 2 incates two labels, 3 indicates the dim of feamap
+        '''
+        n_sample = label.shape[0]
+
+        # tangent vector along 0th label
+        y1 = np.ones(n_sample)
+        y2 = np.zeros(n_sample)
+        y3 = 2 * label[:, 0]
+
+        vec = np.array([y1, y2, y3])
+
+        # tangent vector along 0th label
+        y1 = np.zeros(n_sample)
+        y2 = 3 * np.ones(n_sample)
+        y3 = 2 * label[:, 1]
+
+        vec = np.array([vec, np.array([y1, y2, y3])])
+
+        vec = np.transpose(vec, (2, 0, 1) )
+        return vec

@@ -3,10 +3,9 @@ import numpy as np
 import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.metrics import r2_score
-from sklearn.base import BaseEstimator
 import matplotlib.pyplot as plt
-import copy
-from scipy.stats import multivariate_normal
+
+import predusion.geo_tool
 
 class Data_manifold():
 
@@ -28,8 +27,6 @@ class Data_manifold():
 
     @staticmethod
     def mul_gaussian_kernel(x, h=None):
-
-        dim = len(h)
         inv_cov = np.diag(1.0 / 2.0 / np.array(h))
 
         power = np.einsum(x, [0, 1, 2], inv_cov, [0, 3], x, [3, 1, 2], [1, 2])
@@ -65,22 +62,35 @@ class Data_manifold():
         '''fit the manifold, remember to first build the kernel'''
         kernel_norm = np.sum(self.kernel, axis=0)
         self.info_manifold = self.kernel.T @ self.feamap / kernel_norm[..., np.newaxis]
-        self.label_mesh = self.query_label.copy()
+        self.label_mesh = self.query_label
 
         return self.label_mesh.copy(), self.info_manifold.copy()
 
-    def tangent_vector(self, label_id=0):
+    def tangent_vector(self, label_id='all'):
         '''
         label_id (int or 'all'): tangent vector of which column of information variables
+        0 - n_sample, 1 - n_feature, 2 - n_query, 3 - n_label
         '''
-        # 0 - n_sample, 1 - n_feature, 2 - n_query
+        if type(label_id) == int:
+            label_id = [label_id]
+        if label_id == 'all':
+            lb_diff_select = self.lb_mesh_diff
+            kernel_width_select = np.array(self.kernel_width)
+        else:
+            lb_diff_select = self.lb_mesh_diff[label_id, :, :]
+            kernel_width_select = np.array(self.kernel_width)[label_id]
+
+        n_label = lb_diff_select.shape[0]
+
         xk = np.einsum(self.feamap, [0, 1], self.kernel, [0, 2], [1, 2])
-        xkv = np.einsum(self.feamap, [0, 1], self.kernel, [0, 2], self.lb_mesh_diff[label_id], [0, 2], [2, 1])
+        xkv = np.einsum(self.feamap, [0, 1], self.kernel, [0, 2], lb_diff_select, [3, 0, 2], [2, 3, 1]) # n_query, n_label, n_feature
         k = np.sum(self.kernel, axis=0)
-        kv = np.einsum(self.kernel, [0, 2], self.lb_mesh_diff[label_id], [0, 2], [2])
-        term1 = np.einsum(xk, [1, 2], kv, [2], [2, 1])
-        term2 = np.einsum(xkv, [2, 1], k, [2], [2, 1])
-        vec = 1.0 / self.kernel_width[label_id] * (term1 - term2) / (k**2)[..., np.newaxis]
+        kv = np.einsum(self.kernel, [0, 2], lb_diff_select, [3, 0, 2], [2, 3])
+        term1 = np.einsum(xk, [1, 2], kv, [2, 3], [2, 3, 1])
+        term2 = np.einsum(xkv, [2, 3, 1], k, [2], [2, 3, 1])
+
+        kernel_width_reshape = kernel_width_select.reshape((1, n_label, 1))
+        vec = (term1 - term2) / (k**2)[..., np.newaxis, np.newaxis] / kernel_width_reshape # the shape is [n_query, n_label, n_features]
         return vec
 
     def fit_by_label_grid_mesh(self, raw_label_mesh, feamap, label):
@@ -152,13 +162,6 @@ class Data_manifold():
         self.pca.fit(self.info_manifold)
         return self.pca, self.dim
 
-    def manifold(self, label_query, feamap, label, kernel_name='gaussian', kernel_width=[0.5, 0.5]):
-        '''
-        output a vector on the manifold which encode label_query. Same as fit_info_manifold, less efficient but more flexiable
-        label_query (array (n_query_sample, 2))
-        '''
-        pass
-
     def predict(self, X):
         '''
         predict the label of X
@@ -176,7 +179,7 @@ class Data_manifold():
         return pred
 
     def score(self, X, label):
-        ''' Decoding X to the information using the manifold. Score of multiple output would be averaged
+        ''' Decoding X to the information using the manifold. Score of multiple output would be averaged. Remember to fit manifold firstly
         X (array [n_observations, n_features])
         '''
         pred = self.predict(X)
@@ -188,6 +191,90 @@ class Data_manifold():
         pred, _ = self.manifold_decoder_score(X, label)
         score = mutual_info.mutual_information_2d(pred, label, sigma=sigma, normalized=normalized)
         return score
+
+#class Layer_manifold():
+#    def load_data(self, feamap, label):
+#        '''
+#        feamap (dict): {'X': [n_observation, n_features], 'R0': [n_observation, n_features], ...}
+#        label (array [n_observation, n_labels])
+#        '''
+#        self.feamap = feamap
+#        self.label = label
+#        self.num_label = label.shape[1]
+#
+#        self.ana_group = {key: {} for key in feamap} # create empty group, key indicate layers. this empty dict would be filled in like {(0, 1): Data_manifold} where (0, 1) indicate the combination of label_id
+#
+#    def fit_info_manifold_grid_all(self, label_mesh, label_id=(0, 1), kernel_name='gaussian', kernel_width=[0.1, 0.1]):
+#        '''
+#        fit the info_manifold for all keys but single label
+#        label_id (int): the ith label
+#        '''
+#        lb_id_tuple = tuple(label_id)
+#        l_mesh = [label_mesh[i] for i in label_id]
+#        kw = [kernel_width[i] for i in label_id]
+#
+#        for key in self.ana_group:
+#            self.ana_group[key][lb_id_tuple] = Data_manifold(kernel_width=kw, kernel_name=kernel_name)
+#            self.ana_group[key][lb_id_tuple].fit_by_label_grid_mesh(l_mesh, self.feamap[key], self.label[:, lb_id_tuple])
+#
+#    def manifold_decoder_score_all(self, feamap_test, label_test, label_id=[0, 1]):
+#        lb_id_tuple = tuple(label_id)
+#        score = {}
+#        for key in self.ana_group:
+#            score[key] = self.ana_group[key][lb_id_tuple].score(feamap_test[key], label_test[:, lb_id_tuple])
+#        return score
+#
+#    def angle_tangent_vec_all(self, query_label, label_id=[0, 1]):
+#        '''
+#        calculate the cos of two normalized tangent vectors on the manifold at point query_label.
+#        query_label (array [n_query_points, n_info])
+#        label_id (list [2]): id of two information variables
+#        output:
+#          angle: between 0 and 90 degree
+#        '''
+#
+#        angle = {}
+#        for key in self.ana_group:
+#            vec = self.ana_group[key][lb_id_tuple].tangent_vector(query_label, label_id) # the shape is [n_query, n_label, n_features]
+#            vec = vec / np.linalg.norm(vec, axis=2, keepdims=True)
+#            vec1, vec2 = vec[:, 0, :], vec[:, 1, :]
+#            dot = np.einsum(vec1, [0, 1], vec2, [0, 1], [0])
+#            ag = np.arccos(np.clip(dot, -1, 1)) / np.pi * 180
+#            angle[key] = ag
+#
+#        return angle
+#
+#    def dim_all(self, explained_var_thre, label_id):
+#        dim = {} # dimensionality of the manifold
+#        for key in self.ana_group:
+#            _, dim[key] = self.ana_group[key][tuple(label_id)].fit_manifold_subspace(explained_var_thre)
+#        return dim
+#
+#    def label_dis(self, label_id=None):
+#        '''show the histogram of label distribution'''
+#        if label_id is None:
+#            sns.displot(self.label)
+#        else:
+#            try:
+#                for lid in label_id:
+#                    sns.displot(self.label[:, lid])
+#            except:
+#                sns.displot(self.label[:, label_id])
+#        plt.show()
+#
+#    def search_kernel_width(self, label_mesh, feamap_train, label_train, feamap_validate, label_validate, label_id, kernel_width_list, kernel_name='gaussian'):
+#
+#        l_mesh = [label_mesh[i] for i in label_id]
+#        lb_id_tuple = tuple(label_id)
+#
+#        score = {}
+#        for key in feamap_train:
+#            score[key] = []
+#            for kw in kernel_width_list:
+#                dm = Data_manifold(kernel_width=kw, kernel_name=kernel_name)
+#                dm.fit_by_label_grid_mesh(l_mesh, feamap_train[key], label_train[:, label_id])
+#                score[key].append(dm.score(feamap_validate[key], label_validate[:, label_id]))
+#        return score
 
 class Layer_manifold():
     def load_data(self, feamap, label):
@@ -201,7 +288,7 @@ class Layer_manifold():
 
         self.ana_group = {key: {} for key in feamap} # create empty group, key indicate layers. this empty dict would be filled in like {(0, 1): Data_manifold} where (0, 1) indicate the combination of label_id
 
-    def fit_info_manifold_all(self, label_mesh, label_id=(0, 1), kernel_name='gaussian', kernel_width=[0.1, 0.1]):
+    def fit_info_manifold_grid_all(self, label_mesh, label_id=(0, 1), kernel_name='gaussian', kernel_width=[0.1, 0.1]):
         '''
         fit the info_manifold for all keys but single label
         label_id (int): the ith label
@@ -220,6 +307,26 @@ class Layer_manifold():
         for key in self.ana_group:
             score[key] = self.ana_group[key][lb_id_tuple].score(feamap_test[key], label_test[:, lb_id_tuple])
         return score
+
+    def angle_tangent_vec_all(self, query_label, label_id=[0, 1]):
+        '''
+        calculate the cos of two normalized tangent vectors on the manifold at point query_label.
+        query_label (array [n_query_points, n_info])
+        label_id (list [2]): id of two information variables
+        output:
+          angle: between 0 and 90 degree
+        '''
+
+        angle = {}
+        for key in self.ana_group:
+            vec = self.ana_group[key][lb_id_tuple].tangent_vector(query_label, label_id) # the shape is [n_query, n_label, n_features]
+            vec = vec / np.linalg.norm(vec, axis=2, keepdims=True)
+            vec1, vec2 = vec[:, 0, :], vec[:, 1, :]
+            dot = np.einsum(vec1, [0, 1], vec2, [0, 1], [0])
+            ag = np.arccos(np.clip(dot, -1, 1)) / np.pi * 180
+            angle[key] = ag
+
+        return angle
 
     def dim_all(self, explained_var_thre, label_id):
         dim = {} # dimensionality of the manifold
