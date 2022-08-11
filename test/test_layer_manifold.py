@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import predusion.manifold as mfd
 from predusion.static_dataset import Toy_Manifold_Dataset
+from predusion.geo_tool import angle_vec
 
 ############################## cProfile speed testing
 import cProfile, pstats
@@ -10,22 +11,12 @@ pr = cProfile.Profile()
 pr.enable()
 ############################## cProfile speed testing
 
-def angle_vec(vec1, vec2, limit_90=False):
-    '''
-    vec1, vec2: [n_query, n_feature]
-    '''
-    vec1_u, vec2_u = vec1 / np.linalg.norm(vec1, axis=1, keepdims=True), vec2 / np.linalg.norm(vec2, axis=1, keepdims=True)
-    dot = np.einsum(vec1_u, [0, 1], vec2_u, [0, 1], [0])
-    ag = np.arccos(np.clip(dot, -1, 1)) / np.pi * 180
-    if limit_90:
-        return np.minimum(ag, 180-ag)
-    else:
-        return ag
-
 train_size, test_size = 200, 10
+label_id = (0, 1)
+noise_scale = 0.4
 
 ds = Toy_Manifold_Dataset()
-train_label, train_feamap, test_label, test_feamap, test_true_feamap = ds.generate_data(train_size, test_size)
+train_label, train_feamap, test_label, test_feamap, test_true_feamap = ds.generate_data(train_size, test_size, noise_scale=noise_scale)
 test_vec = ds.tangent_vec(test_label)
 
 def layer_wrapper(*data):
@@ -37,11 +28,16 @@ kernel_width = [0.1, 0.1]
 
 train_feamap_wp, test_feamap_wp = layer_wrapper(train_feamap, test_feamap)
 
-mf = mfd.Data_manifold()
-mf.kernel = 'gaussian'
-mf.kernel_width = kernel_width
-mf.build_kernel(test_label, train_feamap, train_label)
-_, manifold_fit = mf.fit_by_label()
+lm = mfd.Layer_manifold()
+lm.load_data(train_feamap_wp, train_label)
+lm.build_kernel(test_label, label_id=label_id)
+lm.fit_info_manifold_all(label_id=label_id)
+manifold_fit = lm.ana_group['null_layer'][label_id].info_manifold
+
+### test the fit_info_manifold_grid_all
+#x1 = np.linspace(0, 1, 5)
+#lm.fit_info_manifold_grid_all([x1, x1])
+#manifold_fit = lm.ana_group['null_layer'][(0,1)].info_manifold
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
@@ -52,16 +48,22 @@ ax.scatter3D(test_true_feamap[:, 0], test_true_feamap[:, 1], test_true_feamap[:,
 plt.legend()
 plt.show()
 
+####### decoding score
+score = lm.manifold_decoder_score_all(test_feamap_wp, test_label, label_id=label_id)
+print('score: ', score)
+dim = lm.dim_all(0.95, label_id)
+print('dim: ', dim)
+
 ##### calculate tangent vector
-vec = mf.tangent_vector(label_id='all')
+vec = lm.tangent_vec_all(label_id)
 vec_true = ds.tangent_vec(test_label)
-print('estimated tangent vector 0: \n', vec[:3, 0, :])
+print('estimated tangent vector 0: \n', vec['null_layer'][:3, 0, :])
 print('true tangent vector 0: \n', vec_true[:3, 0, :])
-print('estimated tangent vector 1: \n', vec[:3, 1, :])
+print('estimated tangent vector 1: \n', vec['null_layer'][:3, 1, :])
 print('true tangent vector 1: \n', vec_true[:3, 1, :])
 
 ### calculate angles
-ag_est = angle_vec(vec[:, 0, :], vec[:, 1, :])
+ag_est = lm.angle_tangent_vec_all(label_id, label_id)['null_layer']
 ag_true = angle_vec(vec_true[:, 0, :], vec_true[:, 1, :])
 
 fig = plt.figure(1)
@@ -76,7 +78,7 @@ ax.set_ylabel('estimate angle')
 pr.disable()
 sortby = 'cumtime'
 ps = pstats.Stats(pr).sort_stats(sortby)
-ps.print_stats(10)
+ps.print_stats(5)
 ############################## cProfile speed testing
 
 plt.show()

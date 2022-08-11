@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 
-import predusion.geo_tool
+import predusion.geo_tool as geo_tool
 
 class Data_manifold():
 
@@ -38,7 +38,7 @@ class Data_manifold():
         building kernels for fit_by_label
           query_label ( array [n_query_points, n_info] )
           feamap (array [num_sample, num_feature])
-          label (array [num_sample, 2])
+          label (array [num_sample, n_labels])
         '''
         self.query_label = query_label
         self.feamap = feamap
@@ -73,7 +73,7 @@ class Data_manifold():
         '''
         if type(label_id) == int:
             label_id = [label_id]
-        if label_id == 'all':
+        if type(label_id) == str and label_id == 'all':
             lb_diff_select = self.lb_mesh_diff
             kernel_width_select = np.array(self.kernel_width)
         else:
@@ -247,19 +247,40 @@ class Data_manifold():
 #        return score
 
 class Layer_manifold():
-    def load_data(self, feamap, label):
+    def __init__(self):
+        pass
+    def load_data(self, train_feamap, train_label):
         '''
         feamap (dict): {'X': [n_observation, n_features], 'R0': [n_observation, n_features], ...}
         label (array [n_observation, n_labels])
         '''
-        self.feamap = feamap
-        self.label = label
-        self.num_label = label.shape[1]
+        self.feamap = train_feamap
+        self.label = train_label
+        self.num_label = train_label.shape[1]
 
-        self.ana_group = {key: {} for key in feamap} # create empty group, key indicate layers. this empty dict would be filled in like {(0, 1): Data_manifold} where (0, 1) indicate the combination of label_id
+        self.ana_group = {key: {} for key in train_feamap} # create empty group, key indicate layers. this empty dict would be filled in like {(0, 1): Data_manifold} where (0, 1) indicate the combination of label_id
+
+    def build_kernel(self, query_label, label_id=(0, 1), kernel_width=[0.1, 0.1], kernel_name='gaussian'):
+        lb_id_tuple = tuple(label_id)
+        kw = [kernel_width[i] for i in label_id]
+
+        for key in self.ana_group:
+            self.ana_group[key][lb_id_tuple] = Data_manifold(kernel_width=kw, kernel_name=kernel_name)
+            self.ana_group[key][lb_id_tuple].build_kernel(query_label[:, label_id], self.feamap[key], self.label[:, label_id])
+
+    def fit_info_manifold_all(self, label_id):
+        '''
+        remember to build kernel first
+        query_label (array [n_sample, n_label])
+        kernel_width (array, n_label): kernel_width for each label_id
+        '''
+        lb_id_tuple = tuple(label_id)
+        for key, agents in self.ana_group.items(): # all layer
+            self.ana_group[key][lb_id_tuple].fit_by_label()
 
     def fit_info_manifold_grid_all(self, label_mesh, label_id=(0, 1), kernel_name='gaussian', kernel_width=[0.1, 0.1]):
         '''
+        this function will automatically build kernel.
         fit the info_manifold for all keys but single label
         label_id (int): the ith label
         '''
@@ -278,23 +299,37 @@ class Layer_manifold():
             score[key] = self.ana_group[key][lb_id_tuple].score(feamap_test[key], label_test[:, lb_id_tuple])
         return score
 
-    def angle_tangent_vec_all(self, query_label, label_id=[0, 1]):
+    def tangent_vec_all(self, label_id):
+        '''
+        This will automatically calculate all the tangent vectors at query_label which is stored when building_kernel. So please remember to build kernel first
+        '''
+        lb_id_tuple = tuple(label_id)
+        vec = {}
+        for key in self.ana_group:
+                vec[key] = self.ana_group[key][lb_id_tuple].tangent_vector(label_id='all')
+        return vec
+
+    def angle_tangent_vec_all(self, label_id=[0, 1], vec_label_id=[0, 1], limit_90=False):
         '''
         calculate the cos of two normalized tangent vectors on the manifold at point query_label.
         query_label (array [n_query_points, n_info])
-        label_id (list [2]): id of two information variables
+        label_id (list [n_info]): id for agent. n_info should larger than two
+        vec_label_id (list [2]): id along tangent vector
+        limit_90 (bool): limit the angle to np.minimum(ag, 180-ag) or not
         output:
           angle: between 0 and 90 degree
         '''
-
         angle = {}
+        lb_id_tuple = tuple(label_id)
+        label_id_int = np.array(label_id, dtype=int)
+
+        vec_idx = [np.where(label_id_int == vid) for vid in vec_label_id]
+        vec_idx = np.array(vec_idx).flatten()
+
         for key in self.ana_group:
-            vec = self.ana_group[key][lb_id_tuple].tangent_vector(query_label, label_id) # the shape is [n_query, n_label, n_features]
-            vec = vec / np.linalg.norm(vec, axis=2, keepdims=True)
+            vec = self.ana_group[key][lb_id_tuple].tangent_vector(vec_idx) # the shape is [n_query, n_label, n_features]
             vec1, vec2 = vec[:, 0, :], vec[:, 1, :]
-            dot = np.einsum(vec1, [0, 1], vec2, [0, 1], [0])
-            ag = np.arccos(np.clip(dot, -1, 1)) / np.pi * 180
-            angle[key] = ag
+            angle[key] = geo_tool.angle_vec(vec1, vec2, limit_90=limit_90)
 
         return angle
 

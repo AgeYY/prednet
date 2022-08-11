@@ -9,6 +9,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import Ridge as scikit_ridge
 from sklearn.metrics import r2_score
 
+def angle_vec(vec1, vec2, limit_90=False):
+    '''
+    vec1, vec2: [n_query, n_feature]
+    '''
+    vec1_u, vec2_u = vec1 / np.linalg.norm(vec1, axis=1, keepdims=True), vec2 / np.linalg.norm(vec2, axis=1, keepdims=True)
+    dot = np.einsum(vec1_u, [0, 1], vec2_u, [0, 1], [0])
+    ag = np.arccos(np.clip(dot, -1, 1)) / np.pi * 180
+    if limit_90:
+        return np.minimum(ag, 180-ag)
+    else:
+        return ag
+
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
     return vector / np.linalg.norm(vector)

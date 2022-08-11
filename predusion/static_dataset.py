@@ -115,6 +115,7 @@ class Layer_Dataset(Dataset):
         return self.length
 
 class Meta_Dataset():
+    '''arange several datasets'''
     def __init__(self, dataset_name_list, feamap_path_list, label_path_list, label_name_path_list):
         '''
         name_list (list of str): name of the datasets
@@ -156,7 +157,6 @@ class Meta_Dataset():
             label = np.concatenate(label, axis=0)
 
             return feamap, label
-
 
 def train_test_validate_split(dataset, frac_train, frac_test, random_seed=42):
     '''
