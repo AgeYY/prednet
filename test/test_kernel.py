@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import predusion.manifold as mfd
-import predusion.static_dataset as Toy_Manifold_Dataset
+from predusion.static_dataset import Toy_Manifold_Dataset
 
 ############################## cProfile speed testing
 import cProfile, pstats
@@ -22,7 +22,7 @@ def angle_vec(vec1, vec2, limit_90=False):
     else:
         return ag
 
-train_size, test_size = 1000, 10
+train_size, test_size = 200, 10
 
 ds = Toy_Manifold_Dataset()
 train_label, train_feamap, test_label, test_feamap, test_true_feamap = ds.generate_data(train_size, test_size)
@@ -31,8 +31,6 @@ test_vec = ds.tangent_vec(test_label)
 def layer_wrapper(data):
     ''' wrap a null layer for testing the layer_manifold'''
     return {'null_layer': data}
-
-
 
 #### fit the manifold
 kernel_width = [0.1, 0.1]
@@ -70,7 +68,6 @@ dig_line = np.linspace(0, 180, 100)
 ax.plot(dig_line, dig_line, '--')
 ax.set_xlabel('true angle')
 ax.set_ylabel('estimate angle')
-
 
 ############################## cProfile speed testing
 pr.disable()

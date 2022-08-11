@@ -102,44 +102,12 @@ class Data_manifold():
         output:
           self.label_mesh, self.info_manifold
         '''
+        n_info = label.shape[1]
         if self.kernel_width is None:
-            n_info = label.shape[1]
             self.kernel_width = np.ones(n_info)
-
-        n_label = len(raw_label_mesh) # number of layers, also equal to the intrinsic dim of the manifold
-
-        kernel = [] # create kernel for every label
-        for i in range(n_label):
-            lb_meshx, lb_meshy = np.meshgrid(raw_label_mesh[i], label[:, i])
-            lb_mesh_diff = lb_meshx - lb_meshy
-            kernel.append( self.kernel_dic[self.kernel_name](lb_mesh_diff, h=self.kernel_width[i]) )
-
-        kernel_norm_command = [] # denominator
-        for i in range(n_label):
-            kernel_norm_command.append(kernel[i])
-            kernel_norm_command.append([0, i+1])
-        end = [i+1 for i in range(n_label)]
-        kernel_norm_command.append(end)
-
-        kernel_norm = np.einsum(*kernel_norm_command)
-        # the resulting command looks like: kernel_norm = np.einsum(kernel[0], [0, 1], kernel[1], [0, 2], [1, 2])
-
-        info_manifold_command = kernel_norm_command # just rename it. Ready to calculate numerator
-        info_manifold_command.pop()
-        info_manifold_command.append(feamap)
-        info_manifold_command.append([0, n_label+1])
-
-        end = [i+1 for i in range(n_label+1)]
-        info_manifold_command.append(end)
-
-        self.info_manifold = np.einsum(*info_manifold_command) / kernel_norm[..., np.newaxis]
-        # the resulting command looks like: self.info_manifold = np.einsum(kernel[0], [0, 1], kernel[1], [0, 2], feamap, [0, 3], [1, 2, 3]) / kernel_mn_norm[..., np.newaxis]
-        self.label_mesh = np.array( np.meshgrid(*raw_label_mesh) ).transpose()
-
-        self.info_manifold = self.info_manifold.reshape( (-1, feamap.shape[1]) )
-        self.label_mesh = self.label_mesh.reshape( (-1, n_label) )
-
-        return self.label_mesh.copy(), self.info_manifold.copy()
+        query_label = np.array( np.meshgrid(*raw_label_mesh)).transpose().reshape( (-1, n_info) )
+        self.build_kernel(query_label, feamap, label)
+        return self.fit_by_label()
 
     def fit_manifold_subspace(self, explained_var_thre):
         '''
@@ -149,7 +117,9 @@ class Data_manifold():
         '''
 
         # if self.info_manifold not defined
-        try: self.info_manifold
+
+        try:
+            self.info_manifold
         except NameError:
             print('Please fit the information manifold first\n')
             sys.exit()
