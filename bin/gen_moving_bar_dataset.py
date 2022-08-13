@@ -57,6 +57,7 @@ out_data_head = 'grating_stim'
 dg.clear_image_folder(out_data_head)
 speed_list = np.random.uniform(low=0.02, high=0.12, size=size)
 ori_list = np.random.uniform(low=0, high=90, size=size)
+#ori_list = np.zeros(size)
 scale=None
 sf = 0.02
 dg.grating_stim(sf=sf, time_step=time_step, out_data_head=out_data_head, speed_list=speed_list, ori_list=ori_list, scale=scale)

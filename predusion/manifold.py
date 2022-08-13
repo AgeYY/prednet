@@ -23,11 +23,11 @@ class Data_manifold():
 
     @staticmethod
     def gaussian_kernel(u, h=0.1):
-        return np.exp( - u**2 / 2.0 / h)
+        return np.exp( - u**2 / 2.0 / np.array(h)**2)
 
     @staticmethod
     def mul_gaussian_kernel(x, h=None):
-        inv_cov = np.diag(1.0 / 2.0 / np.array(h))
+        inv_cov = np.diag(1.0 / 2.0 / np.array(h)**2)
 
         power = np.einsum(x, [0, 1, 2], inv_cov, [0, 3], x, [3, 1, 2], [1, 2])
 

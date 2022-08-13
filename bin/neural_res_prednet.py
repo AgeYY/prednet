@@ -70,4 +70,3 @@ idx = -1
 plter = Ploter()
 fig, gs = plter.plot_seq_prediction(X_train[idx], output[idx])
 plt.show()
-

@@ -27,7 +27,7 @@ explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
 lt0_mesh = np.linspace(0.03, 0.12, mesh_size)
 lt1_mesh = np.linspace(20, 70, mesh_size)
-lt2_mesh = np.linspace(0, 5, 30)
+lt2_mesh = np.linspace(1, 4, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
 kernel_width = [0.0001, 20, 0.1]
 
@@ -79,7 +79,7 @@ for layer_name in layer_order:
 
 ############################ Fix the hyperparameter and repeat on different training testing sets on different random seeds
 train_ratio, test_ratio = 0.7, 0.3
-n_bootstrap = 2
+n_bootstrap = 20
 dim, score, angle = {}, {}, {}
 for i in range(n_bootstrap):
     (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=None)
