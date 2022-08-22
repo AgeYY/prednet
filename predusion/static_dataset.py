@@ -3,6 +3,15 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.decomposition import PCA
 import hickle as hkl
 import numpy as np
+import numpy.ma as ma
+
+def replace_nan_mean(data, axis=0):
+    '''
+    data (array): replace nan entries in the data to the mean value along axis
+    '''
+    idx = np.isnan(data)
+    return np.where(idx, ma.array(data, mask=idx).mean(axis=axis), data)
+
 
 class Surface_dataset(Dataset):
     def __init__(self, length=10000, shape='cylinder', transform=None, to_torch=False, label=None, **geo_kward):
@@ -77,7 +86,7 @@ class Surface_dataset(Dataset):
 
 # general dataset, loading data from file
 class Layer_Dataset(Dataset):
-    def __init__(self, feamap_path, label_path, label_name_path, explained_var_thre=None):
+    def __init__(self, feamap_path, label_path, label_name_path, explained_var_thre=None, nan_handle='mean'):
         '''
         feamap (dict): {layer_name: feamap, layer_name: feamap}
         label (np array): [n_observation, n_label]
@@ -88,9 +97,12 @@ class Layer_Dataset(Dataset):
 
         if not (explained_var_thre is None):
             for key in self.feamap:
+                self.feamap[key] = replace_nan_mean(self.feamap[key], axis=0) # average nan neural response to its averaged response across all trails
                 self.feamap[key] = self.pca_dim_reduction(self.feamap[key], explained_var_thre)
 
         self.label = hkl.load(label_path) # label should include the sematic meaning
+        self.label = replace_nan_mean(self.label, axis=0) # replace nan label to average label
+
         self.label_name = hkl.load(label_name_path) # label should include the sematic meaning
         self.length = self.label.shape[0]
 
