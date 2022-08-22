@@ -21,18 +21,18 @@ neural_data_path = 'neural_' + out_data_head + '_allen_VISp' + '.hkl'
 label_path = 'label_' + out_data_head + '_allen_VISp' + '.hkl'
 label_name_path = 'label_name_' + out_data_head + '_allen_VISp' + '.hkl'
 
-mesh_size = 20
+mesh_size = 100
 label_id = (0,) # only fit manifold about these information variables.
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
-lt0_mesh = np.linspace(0.03, 0.12, mesh_size)
-lt1_mesh = np.linspace(20, 70, mesh_size)
+lt0_mesh = np.linspace(0, 180, mesh_size)
+lt1_mesh = np.linspace(0.03, 0.12, mesh_size)
 lt2_mesh = np.linspace(1, 4, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
-kernel_width = [0.0001, 20, 0.1]
+kernel_width = [1, 20, 0.1]
 
 ## random dot
 #lt0_mesh = np.linspace(0, 8, mesh_size) # the range should be larger than data
