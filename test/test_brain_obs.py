@@ -5,6 +5,7 @@ import os
 import pprint
 import copy
 import hickle as hkl
+from scipy import stats as st
 
 from allensdk.core.brain_observatory_cache import BrainObservatoryCache
 from kitti_settings import *
@@ -34,7 +35,45 @@ print(dff.shape)
 #    plt.plot(dff[i]+(i*2), color='gray')
 #plt.show()
 
+# compare across trials with fixed condition ori, spatial, phase = (0, 0.02, 0)
 stim_table = data_set.get_stimulus_table('static_gratings')
+idx = (stim_table['orientation'] == 0.0) & (stim_table['spatial_frequency'] == 0.02) & (stim_table['phase'] == 0.00)
+stim_table_subset = stim_table[idx].reset_index()
+
+# get the temporal data
+# record the number of time step in each trial
+trial = []
+time_len = []
+for i in range(len(stim_table_subset)):
+    trial.append(dff[:, stim_table_subset['start'][i]: stim_table_subset['end'][i]])
+    time_len.append(trial[-1].shape[1])
+## find time_len of most trials, cut length longer than this, and remove length shorter than this. This works only when the time_len is highly cumulated at a single value, so other time lengths are just outlier. We recommand you to check distribution of time_len see whether the cut length is reasonable
+## plot out the distribution of time_len
+#plt.figure()
+#plt.hist(time_len)
+#plt.show()
+
+cut_len, _ = st.mode(time_len)
+print(cut_len[0])
+align_time_trial = []
+for tr in trial:
+    try:
+        align_time_trial.append(tr[:, :cut_len[0]])
+    except:
+        continue
+
+align_time_trial = np.array(align_time_trial) # (trial, neuron, time_len)
+
+for sn in range(30):
+    single_neuron = align_time_trial[:, sn, :]
+    plt.figure()
+    plt.imshow(single_neuron)
+    plt.show()
+
+#fig = plt.figure(figsize=(10,8))
+#for i in range(50): # show the first 50 DFF traces
+#    plt.plot(dff[i]+(i*2), color='gray')
+#plt.show()
 
 #print(stim_table.head())
 # get all dff for each stimulus
@@ -64,6 +103,9 @@ label_name_path = os.path.join(DATA_DIR, label_name_path)
 hkl.dump(feamap, feamap_path)
 hkl.dump(label, label_path)
 hkl.dump(label_name, label_name_path)
+
+# check feamap and label
+
 
 #print(cell_response.head())
 #
