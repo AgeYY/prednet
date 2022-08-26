@@ -28,11 +28,11 @@ test_ratio = 0.2
 explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
-lt0_mesh = np.linspace(0, 180, mesh_size)
-lt1_mesh = np.linspace(0.01, 0.33, mesh_size)
+lt0_mesh = np.linspace(0.01, 0.33, mesh_size)
+lt1_mesh = np.linspace(0, 180, mesh_size)
 lt2_mesh = np.linspace(1, 4, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
-kernel_width = [30, 0.01, 0.1]
+kernel_width = [30, 50, 0.1]
 
 ## random dot
 #lt0_mesh = np.linspace(0, 8, mesh_size) # the range should be larger than data

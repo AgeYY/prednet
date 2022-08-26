@@ -9,8 +9,9 @@ from scipy import stats as st
 
 from allensdk.core.brain_observatory_cache import BrainObservatoryCache
 from kitti_settings import *
+import predusion.allen_dataset as ad
 
-out_data_head = 'static_grating' # currently we don't calculate the label yet
+out_data_head = 'drifting_grating' # currently we don't calculate the label yet
 
 # load the BOC
 drive_path = './data/allen-brain-observatory/visual-coding-2p'
@@ -20,55 +21,65 @@ boc = BrainObservatoryCache(manifest_file=manifest_file)
 
 # download one experiment
 exp_id = 511510699 # region VISp
-exps = boc.get_ophys_experiments(experiment_container_ids=[exp_id], stimuli=['static_gratings'])
+exps = boc.get_ophys_experiments(experiment_container_ids=[exp_id], stimuli=['drifting_gratings'])
 print("Experiments for experiment_container_id %d: %d\n" % (exp_id, len(exps)))
 pprint.pprint(exps)
 
 session_id = exps[0]['id'] # only one session has static_gratings, download it directly
 data_set = boc.get_ophys_experiment_data(session_id)
 
-ts, dff = data_set.get_dff_traces()
-print(dff.shape)
 
-#fig = plt.figure(figsize=(10,8))
-#for i in range(50): # show the first 50 DFF traces
-#    plt.plot(dff[i]+(i*2), color='gray')
-#plt.show()
+ada = ad.Drifting_Gratings_Allen_Analyzer(data_set)
 
-# compare across trials with fixed condition ori, spatial, phase = (0, 0.02, 0)
-stim_table = data_set.get_stimulus_table('static_gratings')
-idx = (stim_table['orientation'] == 0.0) & (stim_table['spatial_frequency'] == 0.02) & (stim_table['phase'] == 0.00)
-stim_table_subset = stim_table[idx].reset_index()
+dff, stim_epoch = ada.dff_trace()
+fig, ax = ad.plot_dff_trace(dff, stim_epoch)
+plt.show()
 
-# get the temporal data
-# record the number of time step in each trial
-trial = []
-time_len = []
-for i in range(len(stim_table_subset)):
-    trial.append(dff[:, stim_table_subset['start'][i]: stim_table_subset['end'][i]])
-    time_len.append(trial[-1].shape[1])
-## find time_len of most trials, cut length longer than this, and remove length shorter than this. This works only when the time_len is highly cumulated at a single value, so other time lengths are just outlier. We recommand you to check distribution of time_len see whether the cut length is reasonable
-## plot out the distribution of time_len
-#plt.figure()
-#plt.hist(time_len)
-#plt.show()
-
-cut_len, _ = st.mode(time_len)
-print(cut_len[0])
-align_time_trial = []
-for tr in trial:
-    try:
-        align_time_trial.append(tr[:, :cut_len[0]])
-    except:
-        continue
-
-align_time_trial = np.array(align_time_trial) # (trial, neuron, time_len)
-
-for sn in range(30):
-    single_neuron = align_time_trial[:, sn, :]
-    plt.figure()
-    plt.imshow(single_neuron)
+for sid in range(3):
+    time_window, dff_stim = ada.single_stim(delta=30, stim_name ='drifting_gratings', stim_id=sid, neuron_id=3)
+    fig, ax = ad.plot_single_stim(time_window, dff_stim)
     plt.show()
+
+orivals, tfvals, tuning_array = ada.tuning()
+for i in range(5):
+    plt.plot(orivals, tuning_array[:,i], 'o-', label='{:.2f}'.format(tfvals[i]))
+plt.legend()
+plt.show()
+
+## compare across trials with fixed condition ori, spatial, phase = (0, 0.02, 0)
+#idx = (stim_table['orientation'] == 0.0) & (stim_table['spatial_frequency'] == 0.02) & (stim_table['phase'] == 0.00)
+#t_delta = 5
+#stim_table_subset = stim_table[idx].reset_index()
+#
+## get the temporal data
+## record the number of time step in each trial
+#trial = []
+#time_len = []
+#for i in range(len(stim_table_subset)):
+#    trial.append(dff[:, stim_table_subset['start'][i] - t_delta: stim_table_subset['end'][i] + t_delta ] )
+#    time_len.append(trial[-1].shape[1])
+### find time_len of most trials, cut length longer than this, and remove length shorter than this. This works only when the time_len is highly cumulated at a single value, so other time lengths are just outlier. We recommand you to check distribution of time_len see whether the cut length is reasonable
+### plot out the distribution of time_len
+##plt.figure()
+##plt.hist(time_len)
+##plt.show()
+#
+#cut_len, _ = st.mode(time_len)
+#print(cut_len[0])
+#align_time_trial = []
+#for tr in trial:
+#    try:
+#        align_time_trial.append(tr[:, :cut_len[0]])
+#    except:
+#        continue
+#
+#align_time_trial = np.array(align_time_trial) # (trial, neuron, time_len)
+#
+#for sn in range(30):
+#    single_neuron = align_time_trial[:, sn, :]
+#    plt.figure()
+#    plt.imshow(single_neuron)
+#    plt.show()
 
 #fig = plt.figure(figsize=(10,8))
 #for i in range(50): # show the first 50 DFF traces
@@ -78,7 +89,18 @@ for sn in range(30):
 #print(stim_table.head())
 # get all dff for each stimulus
 
-label_dic = {'orientation': [], 'spatial_frequency': [], 'phase': []}
+stim_name = 'drifting_gratings'
+ts, dff = data_set.get_dff_traces()
+stim_table = data_set.get_stimulus_table(stim_name)
+stim_epoch = data_set.get_stimulus_epoch_table()
+
+paraname = stim_table.keys().unique()
+label_dic = {paraname[i]: [] for i in range(len(paraname))}
+label_dic.pop('start', None)
+label_dic.pop('end', None)
+print(label_dic)
+
+#label_dic = {'orientation': [], 'spatial_frequency': [], 'phase': []}
 feamap = []
 for i in range(len(stim_table)):
     for key in label_dic:
@@ -105,7 +127,6 @@ hkl.dump(label, label_path)
 hkl.dump(label_name, label_name_path)
 
 # check feamap and label
-
 
 #print(cell_response.head())
 #
