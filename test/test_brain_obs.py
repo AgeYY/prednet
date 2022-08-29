@@ -20,6 +20,7 @@ manifest_file = os.path.join(drive_path, 'manifest.json')
 boc = BrainObservatoryCache(manifest_file=manifest_file)
 
 # download one experiment
+tuning_neuron_id = 3
 exp_id = 511510699 # region VISp
 exps = boc.get_ophys_experiments(experiment_container_ids=[exp_id], stimuli=['drifting_gratings'])
 print("Experiments for experiment_container_id %d: %d\n" % (exp_id, len(exps)))
@@ -40,7 +41,7 @@ ada = ad.Drifting_Gratings_Allen_Analyzer(data_set)
 #    fig, ax = ad.plot_single_stim(time_window, dff_stim)
 #    plt.show()
 #
-orivals, tfvals, tuning_array = ada.tuning()
+orivals, tfvals, tuning_array = ada.tuning(neuron_id=tuning_neuron_id)
 for i in range(5):
     plt.plot(orivals, tuning_array[:,i], 'o-', label='{:.2f}'.format(tfvals[i]))
 plt.legend()
@@ -86,7 +87,7 @@ hkl.dump(label_name, label_name_path)
 
 # calculate tuning curve
 feamap = feamap['VISp']
-feamap0 = feamap[:, 0] # 0th neuron
+feamap0 = feamap[:, tuning_neuron_id] # 0th neuron
 cell_response = np.zeros( (label.shape[0], 3) )
 
 for i in range(label.shape[0]):

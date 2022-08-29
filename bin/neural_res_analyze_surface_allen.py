@@ -14,15 +14,12 @@ from kitti_settings import *
 out_data_head = 'drifting_gratings'
 #out_data_head = 'dot_stim'
 output_mode = ['VISp']
-#neural_data_path = 'neural_' + out_data_head + '_R_prednet' + '.hkl'
-#label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
-#label_name_path = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
 neural_data_path = 'neural_' + out_data_head + '_allen_VISp' + '.hkl'
 label_path = 'label_' + out_data_head + '_allen_VISp' + '.hkl'
 label_name_path = 'label_name_' + out_data_head + '_allen_VISp' + '.hkl'
 
 mesh_size = 50
-label_id = (0,1) # only fit manifold about these information variables.
+label_id = (1,) # only fit manifold about these information variables.
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.90
@@ -33,12 +30,6 @@ lt1_mesh = np.linspace(0, 120, mesh_size)
 lt2_mesh = np.linspace(1, 4, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
 kernel_width = [2, 20, 0.1]
-
-## random dot
-#lt0_mesh = np.linspace(0, 8, mesh_size) # the range should be larger than data
-#lt1_mesh = np.linspace(0, 6, mesh_size)
-#lt_mesh = [lt0_mesh, lt1_mesh]
-#kernel_width = [0.5, 1]
 
 feamap_path = os.path.join(DATA_DIR, neural_data_path)
 label_path = os.path.join(DATA_DIR, label_path)
