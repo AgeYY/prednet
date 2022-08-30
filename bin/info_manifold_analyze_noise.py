@@ -1,4 +1,4 @@
-# analyze the manifold of two variables (surfaces)
+# this file provide intuition how much the noise affect inferred manifold
 import os
 import numpy as np
 import hickle as hkl
@@ -10,6 +10,12 @@ import predusion.ploter as ploter
 from predusion.ploter import Ploter_dim_reduction
 from predusion.static_dataset import Layer_Dataset, train_test_validate_split
 from kitti_settings import *
+
+def add_noise_to_feamap(feamap_train, feamap_test, feamap_validate, noise_sigma):
+    for key in feamap_train:
+        feamap_train[key] = feamap_train[key] + np.random.normal(0, noise_sigma, feamap_train[key].shape)
+        feamap_test[key] = feamap_test[key] + np.random.normal(0, noise_sigma, feamap_test[key].shape)
+        feamap_validate[key] = feamap_validate[key] + np.random.normal(0, noise_sigma, feamap_validate[key].shape)
 
 out_data_head = 'grating_stim'
 #out_data_head = 'dot_stim'
@@ -30,6 +36,7 @@ lt1_mesh = np.linspace(0, 90, mesh_size)
 lt2_mesh = np.linspace(0, 5, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
 kernel_width = [0.008, 10, 1]
+noise_sigma = 5 # because different layer, especially the input layer, have different neural firing rate. What we really care is the effect on the deepest layer, don't take the result in pixel space too seriously
 
 ## random dot
 #lt0_mesh = np.linspace(0, 8, mesh_size) # the range should be larger than data
@@ -52,11 +59,9 @@ dataset = Layer_Dataset(feamap_path, label_path, label_name_path, explained_var_
 geoa = manifold.Layer_manifold()
 
 ############################### Use grid search in a single train/validate/test split to find optimal kernel_width
-#kernel_width_list = [ [0.1], [0.01], [0.001], [0.0001], [0.00001], [0.000001], [0.0000001]]
-###kernel_width_list = [ [5], [10], [30], [50], [70], [90], [110] ]
 (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=42)
-#score = geoa.search_kernel_width(lt_mesh, feamap_train, label_train, feamap_validate, label_validate, label_id, kernel_width_list)
-#[print(key,':',value) for key, value in score.items()]
+
+add_noise_to_feamap(feamap_train, feamap_test, feamap_validate, noise_sigma)
 
 # visualize testing
 geoa.load_data(feamap_train, label_train)
@@ -83,21 +88,22 @@ n_bootstrap = 20
 dim, score, angle = {}, {}, {}
 for i in range(n_bootstrap):
     (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=None)
+    add_noise_to_feamap(feamap_train, feamap_test, feamap_validate, noise_sigma)
     geoa.load_data(feamap_train, label_train)
     geoa.fit_info_manifold_grid_all(lt_mesh, label_id, kernel_width=kernel_width)
     score_boots = geoa.manifold_decoder_score_all(feamap_test, label_test, label_id)
     dim_boots = geoa.dim_all(explained_var_thre, label_id)
-    angle_boots = geoa.angle_tangent_vec_all(label_id, label_id)
+    #angle_boots = geoa.angle_tangent_vec_all(label_id, label_id)
 
     for key in dim_boots:
         try:
             dim[key].append(dim_boots[key])
             score[key].append(score_boots[key])
-            angle[key] = np.append(angle[key], angle_boots[key])
+            #angle[key] = np.append(angle[key], angle_boots[key])
         except KeyError:
             dim[key] = [dim_boots[key]]
             score[key] = [score_boots[key]]
-            angle[key] = angle_boots[key]
+            #angle[key] = angle_boots[key]
 
 ### visualize the dimensionality of the manifold
 n_layer, layer_order = layer_order_helper()
@@ -112,8 +118,8 @@ ax = ploter.plot_layer_error_bar_helper(dim, n_layer, layer_order, ax)
 ax.axhline(0, color='k', linestyle='--')
 ax.set_title('dim')
 plt.show()
-fig, ax = plt.subplots(figsize=(4, 4))
-ax = ploter.plot_layer_error_bar_helper(angle, n_layer, layer_order, ax)
-ax.axhline(0, color='k', linestyle='--')
-ax.set_title('angle')
-plt.show()
+#fig, ax = plt.subplots(figsize=(4, 4))
+#ax = ploter.plot_layer_error_bar_helper(angle, n_layer, layer_order, ax)
+#ax.axhline(0, color='k', linestyle='--')
+#ax.set_title('angle')
+#plt.show()

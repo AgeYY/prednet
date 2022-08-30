@@ -95,13 +95,17 @@ class Layer_Dataset(Dataset):
         '''
         self.feamap = hkl.load(feamap_path)
 
+
         if not (explained_var_thre is None):
             for key in self.feamap:
-                self.feamap[key] = replace_nan_mean(self.feamap[key], axis=0) # average nan neural response to its averaged response across all trails
                 self.feamap[key] = self.pca_dim_reduction(self.feamap[key], explained_var_thre)
 
         self.label = hkl.load(label_path) # label should include the sematic meaning
-        self.label = replace_nan_mean(self.label, axis=0) # replace nan label to average label
+
+        if nan_handle == 'mean':
+            for key in self.feamap:
+                self.feamap[key] = replace_nan_mean(self.feamap[key], axis=0) # average nan neural response to its averaged response across all trails
+            self.label = replace_nan_mean(self.label, axis=0) # replace nan label to average label
 
         self.label_name = hkl.load(label_name_path) # label should include the sematic meaning
         self.length = self.label.shape[0]
