@@ -8,3 +8,6 @@ WEIGHTS_DIR = './model_data_keras2/'
 
 # Where results (prediction plots and evaluation file) will be saved.
 RESULTS_SAVE_DIR = './kitti_results/'
+
+# Where to store allen drive
+ALLEN_DRIVE_PATH = './data/allen-brain-observatory/visual-coding-2p'

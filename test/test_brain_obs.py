@@ -10,6 +10,7 @@ from scipy import stats as st
 from allensdk.core.brain_observatory_cache import BrainObservatoryCache
 from kitti_settings import *
 import predusion.allen_dataset as ad
+from predusion.allen_data_generator import generate_allen_data
 
 out_data_head = 'drifting_gratings' # currently we don't calculate the label yet
 
@@ -47,43 +48,7 @@ for i in range(5):
 plt.legend()
 plt.show()
 
-ts, dff = data_set.get_dff_traces()
-stim_table = data_set.get_stimulus_table(out_data_head)
-stim_epoch = data_set.get_stimulus_epoch_table()
-
-paraname = stim_table.keys().unique()
-label_dic = {paraname[i]: [] for i in range(len(paraname))}
-label_dic.pop('start', None)
-label_dic.pop('end', None)
-label_dic.pop('blank_sweep', None)
-print(label_dic)
-
-stim_table = stim_table[stim_table.blank_sweep==0.0].reset_index().drop(columns=['index', 'blank_sweep'])
-print(stim_table)
-feamap = []
-for i in range(len(stim_table)):
-    for key in label_dic:
-        label_dic[key].append(stim_table[key][i])
-    res_cell = np.mean( dff[:, stim_table['start'][i]: stim_table['end'][i]], axis=1 ) # average response through the whole trial period
-    feamap.append(res_cell)
-
-label_name = list(label_dic.keys())
-label = [label_dic[key] for key in label_dic]
-
-label = np.array(label).T
-feamap = {'VISp': np.array(feamap)}
-
-neural_data_path = 'neural_' + out_data_head + '_allen_VISp' + '.hkl'
-label_path = 'label_' + out_data_head + '_allen_VISp' + '.hkl'
-label_name_path = 'label_name_' + out_data_head + '_allen_VISp' + '.hkl'
-
-feamap_path = os.path.join(DATA_DIR, neural_data_path)
-label_path = os.path.join(DATA_DIR, label_path)
-label_name_path = os.path.join(DATA_DIR, label_name_path)
-
-hkl.dump(feamap, feamap_path)
-hkl.dump(label, label_path)
-hkl.dump(label_name, label_name_path)
+feamap, label, label_name = generate_allen_data()
 
 # calculate tuning curve
 feamap = feamap['VISp']

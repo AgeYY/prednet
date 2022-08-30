@@ -95,7 +95,6 @@ class Layer_Dataset(Dataset):
         '''
         self.feamap = hkl.load(feamap_path)
 
-
         if not (explained_var_thre is None):
             for key in self.feamap:
                 self.feamap[key] = self.pca_dim_reduction(self.feamap[key], explained_var_thre)

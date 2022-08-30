@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 class Drifting_Gratings_Allen_Analyzer():
+    ''' This class works on boc.get_ophys_experiment_data'''
     def __init__(self, data_set):
         '''
         get ts and dff by ts, dff = data_set.get_dff_traces()
