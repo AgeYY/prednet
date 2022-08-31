@@ -26,10 +26,10 @@ explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
 lt0_mesh = np.linspace(0, 16, mesh_size)
-lt1_mesh = np.linspace(0, 120, mesh_size)
+lt1_mesh = np.linspace(0, 350, mesh_size)
 lt2_mesh = np.linspace(1, 4, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
-kernel_width = [2, 20, 0.1]
+kernel_width = [2, 10, 0.1]
 
 feamap_path = os.path.join(DATA_DIR, neural_data_path)
 label_path = os.path.join(DATA_DIR, label_path)
@@ -80,17 +80,17 @@ for i in range(n_bootstrap):
     geoa.fit_info_manifold_grid_all(lt_mesh, label_id, kernel_width=kernel_width)
     score_boots = geoa.manifold_decoder_score_all(feamap_test, label_test, label_id)
     dim_boots = geoa.dim_all(explained_var_thre, label_id)
-    angle_boots = geoa.angle_tangent_vec_all(label_id, label_id)
+    #angle_boots = geoa.angle_tangent_vec_all(label_id, label_id)
 
     for key in dim_boots:
         try:
             dim[key].append(dim_boots[key])
             score[key].append(score_boots[key])
-            angle[key] = np.append(angle[key], angle_boots[key])
+            #angle[key] = np.append(angle[key], angle_boots[key])
         except KeyError:
             dim[key] = [dim_boots[key]]
             score[key] = [score_boots[key]]
-            angle[key] = angle_boots[key]
+            #angle[key] = angle_boots[key]
 
 ### visualize the dimensionality of the manifold
 n_layer, layer_order = layer_order_helper()

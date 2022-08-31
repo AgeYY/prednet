@@ -35,7 +35,7 @@ lt0_mesh = np.linspace(0, 0.15, mesh_size)
 lt1_mesh = np.linspace(0, 90, mesh_size)
 lt2_mesh = np.linspace(0, 5, 30)
 lt_mesh = [lt0_mesh, lt1_mesh, lt2_mesh]
-kernel_width = [0.008, 10, 1]
+kernel_width = [0.008, 5, 1]
 noise_sigma = 5 # because different layer, especially the input layer, have different neural firing rate. What we really care is the effect on the deepest layer, don't take the result in pixel space too seriously
 
 ## random dot
@@ -52,6 +52,9 @@ def layer_order_helper():
     if 'prednet' in neural_data_path:
         n_layer = 5
         layer_order = ['X', 'R0', 'R1', 'R2', 'R3']
+
+        #n_layer = 1 # single layer analyze
+        #layer_order = ['R3']
     return n_layer, layer_order
 
 dataset = Layer_Dataset(feamap_path, label_path, label_name_path, explained_var_thre=explained_var_thre_pca_all_data, nan_handle='None') # no nan in data, skip nan_handle would be faster
