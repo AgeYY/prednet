@@ -55,8 +55,8 @@ dg = Dataset_generator()
 size=100
 out_data_head = 'grating_stim'
 dg.clear_image_folder(out_data_head)
-speed_list = np.random.uniform(low=0.02, high=0.12, size=size)
-ori_list = np.random.uniform(low=0, high=90, size=size)
+speed_list = np.random.uniform(low=0.01, high=0.12, size=size)
+ori_list = np.random.uniform(low=0, high=360, size=size)
 #ori_list = np.zeros(size)
 scale=None
 sf = 0.02

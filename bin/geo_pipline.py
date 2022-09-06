@@ -32,7 +32,7 @@ nt = 8
 weights_file = 'prednet_kitti_weights.hdf5'
 json_file = 'prednet_kitti_model.json'
 
-cut_time_geo = [3, nt] # analyze the geometric property only limit with this time interval. unit is frame
+cut_time_geo = [2, nt] # analyze the geometric property only limit with this time interval. unit is frame
 n_com_procrustes = 3
 
 embed_method = 'pca'
