@@ -267,17 +267,19 @@ class Layer_manifold():
                 sns.displot(self.label[:, label_id])
         plt.show()
 
-    def search_kernel_width(self, label_mesh, feamap_train, label_train, feamap_validate, label_validate, label_id, kernel_width_list, kernel_name='gaussian'):
+    def search_kernel_width(self, label_mesh, feamap_validate, label_validate, label_id, kernel_width_list, kernel_name='gaussian'):
+        '''
+        label_mesh only needs to provide the mesh of target label (specified by label_id)
+        '''
 
         l_mesh = np.array([label_mesh[i] for i in label_id]).transpose()
 
         score = {}
-        for key in feamap_train:
+        for key in self.feamap:
             score[key] = []
             for kw in kernel_width_list:
                 dm = Data_manifold(kernel_width=kw, kernel_name=kernel_name)
-                dm.build_kernel(l_mesh, feamap_train[key], label_train[:, label_id])
+                dm.build_kernel(l_mesh, self.feamap[key], self.label[:, label_id])
                 dm.fit_by_label()
-                #dm.fit_by_label_grid_mesh(l_mesh, feamap_train[key], label_train[:, label_id])
                 score[key].append(dm.score(feamap_validate[key], label_validate[:, label_id]))
         return score

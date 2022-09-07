@@ -118,6 +118,52 @@ class Layer_Dataset(Dataset):
         pca = PCA(n_components=dim)
         return pca.fit_transform(feamap)
 
+    def convert_label_to_nonperiodic(self, var_period):
+        self.label_origin = self.label.copy()
+        self.label = self.label_to_nonperiodic(self.label, var_period)
+
+
+    @staticmethod
+    def label_to_nonperiodic(label, var_period):
+        '''
+        var_period (None or list [[a0, b0], [a1, b1], ..., None]): the length is equal to the number of labels (columns of train_label). None means this variable is linear, while given a period interval, this function will convert it into two variable cos and sin
+        label (np array, [n_data_points, n_labels])
+        '''
+        i_var = 0
+        label_nonperiod = []
+        for period in var_period:
+            if period is None:
+                label_nonperiod.append(label[:, i_var])
+            else:
+                T = period[1] - period[0]
+                angle = (label[:, i_var] - period[0]) / T * 2.0 * np.pi # convert to 0 to 360
+                labelcos = np.cos(angle)
+                labelsin = np.sin(angle)
+                label_nonperiod.append(labelcos)
+                label_nonperiod.append(labelsin)
+            i_var +=1
+        label_nonperiod = np.array(label_nonperiod).transpose()
+        return label_nonperiod
+
+    @staticmethod
+    def label_to_origin(label_nonperiod, var_period):
+        '''
+        inverse procedure of label_to_nonperiodic
+        '''
+        i_var = 0
+        label = []
+        for period in var_period:
+            if period is None:
+                label.append(label_nonperiod[:, i_var])
+            else:
+                T = period[1] - period[0]
+                labelval = np.arctan2(label_nonperiod[:, i_var+1], label_nonperiod[:, i_var])
+                label.append( labelval / np.pi * T / 2.0 % T + period[0])
+                i_var += 1
+            i_var +=1
+        label = np.array(label).transpose()
+        return label
+
     def __getitem__(self, idx):
 
         obs = {}
