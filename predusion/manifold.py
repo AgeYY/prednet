@@ -96,16 +96,18 @@ class Data_manifold():
     def fit_by_label_grid_mesh(self, raw_label_mesh, feamap, label):
         '''
         average feature values with similar label, which is called as info_manifold. slightly faster than fit_by_label. recommend to use fit_by_label
+        !!! we don't recommand you to use this function because it would generate new label_mesh which is not consistent with the input label_mesh. Grid operation should be performed outside the manifold class!
         input:
           feamap (array [num_sample, num_feature])
-          label (array [num_sample, 2])
+          raw_label_mesh (array [num_sample, n_labels]): the final label would be np.meshgrid(all columns). Not recommand to use in high dimensional situation
         output:
           self.label_mesh, self.info_manifold
         '''
         n_info = label.shape[1]
         if self.kernel_width is None:
             self.kernel_width = np.ones(n_info)
-        query_label = np.array( np.meshgrid(*raw_label_mesh)).transpose().reshape( (-1, n_info) )
+        raw_label_mesh_list = [raw_label_mesh[:, i] for i in range(n_info)]
+        query_label = np.array( np.meshgrid(*raw_label_mesh_list)).transpose().reshape( (-1, n_info) )
         self.build_kernel(query_label, feamap, label)
         return self.fit_by_label()
 
@@ -196,12 +198,14 @@ class Layer_manifold():
 
     def fit_info_manifold_grid_all(self, label_mesh, label_id=(0, 1), kernel_name='gaussian', kernel_width=[0.1, 0.1]):
         '''
+        !!! we don't recommand you to use this function because it would generate new label_mesh which is not consistent with the input label_mesh
+        label_mesh (np_array [n_mesh, n_labels])
         this function will automatically build kernel.
         fit the info_manifold for all keys but single label
         label_id (int): the ith label
         '''
         lb_id_tuple = tuple(label_id)
-        l_mesh = [label_mesh[i] for i in label_id]
+        l_mesh = label_mesh[:, label_id]
         kw = [kernel_width[i] for i in label_id]
 
         for key in self.ana_group:
@@ -269,10 +273,10 @@ class Layer_manifold():
 
     def search_kernel_width(self, label_mesh, feamap_validate, label_validate, label_id, kernel_width_list, kernel_name='gaussian'):
         '''
-        label_mesh only needs to provide the mesh of target label (specified by label_id)
+        label_mesh ([n_mesh, n_labels])
         '''
 
-        l_mesh = np.array([label_mesh[i] for i in label_id]).transpose()
+        l_mesh = label_mesh[:, label_id]
 
         score = {}
         for key in self.feamap:
