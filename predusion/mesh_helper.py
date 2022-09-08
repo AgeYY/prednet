@@ -8,7 +8,36 @@ class Mesh_Helper():
     def set_var_period(self, var_period):
         self.var_period = var_period
 
-    def kernel_to_nonperiodic(self, kernel_width):
+    def label_id_to_nonperiodic(self, label_id):
+        label_id_nonperiodic = []
+        count = 0
+
+        for i, period in enumerate(self.var_period):
+            if period is None:
+                if i in label_id:
+                    label_id_nonperiodic.append(count)
+                count += 1
+            else:
+                if i in label_id:
+                    label_id_nonperiodic.append(count)
+                    label_id_nonperiodic.append(count + 1)
+                count += 2
+        return tuple(label_id_nonperiodic)
+
+    def label_id_to_origin(self, label_id_nonperiodic):
+        label_id = []
+        count = 0
+        for i, period in enumerate(self.var_period):
+            if period is None:
+                if i in label_id_nonperiodic:
+                    label_id.append(count)
+                count += 1
+            else:
+                if i in label_id_nonperiodic:
+                    label_id.append(count)
+
+
+    def kernel_to_nonperiodic(self, kernel):
         '''
         convert kernel size to nonperiodic. This is same as label_to_nonperiodic, just the data type of kernel_width is a list
         input:
@@ -16,7 +45,37 @@ class Mesh_Helper():
         output:
           kernel_width same as origin kernel_width of periodic var converted into two seperate kernel_width for cos and sin seperately
         '''
-        pass
+        i_var = 0
+        kernel_nonperiodic = []
+        for period in self.var_period:
+            if period is None:
+                kernel_nonperiodic.append(kernel[i_var])
+            else:
+                T = period[1] - period[0]
+                kernel_i_var = 4.0 / np.pi * np.sin(np.pi * kernel[i_var] / T)
+                kernel_nonperiodic.append(kernel_i_var)
+                kernel_nonperiodic.append(kernel_i_var)
+            i_var +=1
+
+        return kernel_nonperiodic
+
+    def kernel_to_origin(self, kernel_nonperiodic):
+        ''' inverse operation of kernel_to_nonperiod'''
+        i_var = 0
+        kernel = []
+        for period in self.var_period:
+            if period is None:
+                kernel.append(kernel_nonperiodic[i_var])
+            else:
+                T = period[1] - period[0]
+                sin_val = np.clip(kernel_nonperiodic[i_var] * np.pi / 4.0, -1, 1)
+                kernel_i_var = T / np.pi * np.arcsin(sin_val)
+                kernel.append(kernel_i_var)
+                i_var +=1
+
+            i_var +=1
+        return kernel
+
     def label_to_nonperiodic(self, label):
         '''
         var_period (None or list [[a0, b0], [a1, b1], ..., None]): the length is equal to the number of labels (columns of train_label). None means this variable is linear, while given a period interval, this function will convert it into two variable cos and sin

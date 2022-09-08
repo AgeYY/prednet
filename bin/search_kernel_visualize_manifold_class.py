@@ -30,9 +30,11 @@ explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
 mesh_bound = [[0, 0.15], [0, 360], [0, 5]]
 var_period = [None, [0, 360], None] # the length is equal to the number of labels (columns of train_label). None means this variable is linear, while given a period interval, von mises function would be used as a kernel
-kernel_width = [0.0016, 0.5, 0.5, 1]
+kernel_width = [0.0016, 60, 1]
 #kernel_width = [0.0016, 0.5, 0.5, 1]
 
+mesh_hp = Mesh_Helper(var_period)
+kernel_width = mesh_hp.kernel_to_nonperiodic(kernel_width)
 
 ### these are for kernel search
 kernel_width_speed_list = np.linspace(0.0005, 0.01, 5).reshape(-1, 1)
@@ -53,7 +55,6 @@ def layer_order_helper():
         layer_order = ['X', 'R0', 'R1', 'R2', 'R3']
     return n_layer, layer_order
 
-mesh_hp = Mesh_Helper(var_period)
 label_mesh = mesh_hp.generate_manifold_label_mesh(mesh_bound, mesh_size)
 label_mesh = mesh_hp.label_to_nonperiodic(label_mesh)
 
