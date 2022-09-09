@@ -14,7 +14,6 @@ from predusion.mesh_helper import Mesh_Helper
 from kitti_settings import *
 
 out_data_head = 'grating_stim'
-#out_data_head = 'dot_stim'
 output_mode = ['R0', 'R1', 'R2', 'R3']
 neural_data_path = 'neural_' + out_data_head + '_R_prednet' + '.hkl'
 label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
@@ -26,7 +25,7 @@ test_ratio = 0.2
 explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
-label_id = (1,) # this is id before converting to nonperiodic
+label_id = (1,)
 mesh_bound = [[0, 0.15], [0, 360], [0, 5]]
 var_period = [None, [0, 360], None] # the length is equal to the number of labels (columns of train_label). None means this variable is linear, while given a period interval, von mises function would be used as a kernel
 kernel_width = [0.0016, 60, 1]
