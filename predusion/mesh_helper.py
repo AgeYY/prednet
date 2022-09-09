@@ -13,7 +13,6 @@ class Mesh_Helper():
 
         nu = [False if vari is None else True for vari in self.var_period] # binary vector to indicate whether the i th variable is periodic or not
         sum_nu = np.cumsum(nu)
-        print(sum_nu)
 
         for lid in label_id:
             j = lid + sum_nu[lid]
@@ -57,7 +56,7 @@ class Mesh_Helper():
                 kernel_nonperiodic.append(kernel_i_var)
             i_var +=1
 
-        return kernel_nonperiodic
+        return np.array(kernel_nonperiodic)
 
     def kernel_to_origin(self, kernel_nonperiodic):
         ''' inverse operation of kernel_to_nonperiod'''
@@ -74,7 +73,7 @@ class Mesh_Helper():
                 i_var +=1
 
             i_var +=1
-        return kernel
+        return np.array(kernel)
 
     def label_to_nonperiodic(self, label):
         '''
@@ -115,8 +114,7 @@ class Mesh_Helper():
         label = np.array(label).transpose()
         return label
 
-    @staticmethod
-    def generate_manifold_label_mesh(mesh_bound, mesh_size, random=None):
+    def generate_manifold_label_mesh(self, mesh_bound, mesh_size, random=False, grid=False):
         '''
         input:
           mesh_bound (list [[a0, b0], [a1, b1], [a2, b2], ...]): length of list is n_info
@@ -128,8 +126,22 @@ class Mesh_Helper():
         n_info = len(mesh_bound)
         label_mesh = np.empty((mesh_size, n_info))
         for i in range(n_info):
-            if random is None:
-                label_mesh[:, i] = np.linspace(mesh_bound[i][0], mesh_bound[i][1], mesh_size)
-            else:
+            if random:
                 label_mesh[:, i] = np.random.uniform(mesh_bound[i][0], mesh_bound[i][1], mesh_size)
+            else:
+                label_mesh[:, i] = np.linspace(mesh_bound[i][0], mesh_bound[i][1], mesh_size)
+
+        if grid:
+            label_mesh_list = [label_mesh[:, i] for i in range(n_info)]
+            label_mesh = np.array( np.meshgrid(*label_mesh_list)).transpose().reshape( (-1, n_info) )
+
         return label_mesh
+
+    def generate_kernel_mesh(self, kernel_mesh_bound, kernel_mesh_size, random=None):
+        kernel_mesh = self.generate_manifold_label_mesh(kernel_mesh_bound, kernel_mesh_size, random=random)
+        return kernel_mesh
+
+    def kernel_mesh_to_nonperiodic(self, kernel_mesh):
+        '''This function is useful in validation. Rows are sample, cols are labels'''
+        return self.kernel_to_nonperiodic(kernel_mesh.T).T
+

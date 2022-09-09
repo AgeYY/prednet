@@ -271,6 +271,29 @@ def plot_layer_error_bar_helper(score, n_layer, layer_order, ax, error_bar_metho
     ax.plot(np.arange(-1, n_layer - 1), score_mean)
     return ax
 
+def kernel_size_ploter(feamap_train, label_train, feamap_validate, label_validate, geoa, lt_mesh, label_id, kernel_mesh, train_ratio=0.6, test_ratio=0.2):
+    '''
+    for fine tuning kernel size, see demo in search_kernel
+    dataset: a layer_dataset
+    geoa: a layer_manifold
+    lt_mesh ([n_mesh, n_labels])
+    '''
+    geoa.load_data(feamap_train, label_train)
+    score = geoa.search_kernel_width(lt_mesh, feamap_validate, label_validate, label_id, kernel_mesh)
+    print('scores are:')
+    [print(key,':',value) for key, value in score.items()]
+    print('The corresponding kernel sizes are (mapped by row)')
+    print(kernel_mesh[:, label_id])
+
+    plt.figure()
+    plt.title('r2_score for different kernel size. Size of x and y are same')
+    for key, value in score.items():
+        plt.plot(kernel_mesh[:, label_id[0]], value, label=key)
+        plt.scatter(kernel_mesh[:, label_id[0]], value)
+    plt.legend()
+    plt.show()
+    return score
+
 if __name__ == '__main__':
     import os
     import predusion.immaker as immaker
