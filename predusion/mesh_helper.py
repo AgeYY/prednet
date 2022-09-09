@@ -10,32 +10,32 @@ class Mesh_Helper():
 
     def label_id_to_nonperiodic(self, label_id):
         label_id_nonperiodic = []
-        count = 0
 
-        for i, period in enumerate(self.var_period):
-            if period is None:
-                if i in label_id:
-                    label_id_nonperiodic.append(count)
-                count += 1
+        nu = [False if vari is None else True for vari in self.var_period] # binary vector to indicate whether the i th variable is periodic or not
+        sum_nu = np.cumsum(nu)
+        print(sum_nu)
+
+        for lid in label_id:
+            j = lid + sum_nu[lid]
+            if nu[lid]:
+                label_id_nonperiodic.append(j - 1)
+                label_id_nonperiodic.append(j)
             else:
-                if i in label_id:
-                    label_id_nonperiodic.append(count)
-                    label_id_nonperiodic.append(count + 1)
-                count += 2
+                label_id_nonperiodic.append(j)
+
         return tuple(label_id_nonperiodic)
 
     def label_id_to_origin(self, label_id_nonperiodic):
         label_id = []
-        count = 0
-        for i, period in enumerate(self.var_period):
-            if period is None:
-                if i in label_id_nonperiodic:
-                    label_id.append(count)
-                count += 1
-            else:
-                if i in label_id_nonperiodic:
-                    label_id.append(count)
+        nu = [False if vari is None else True for vari in self.var_period] # binary vector to indicate whether the i th variable is periodic or not
+        sum_nu = np.cumsum(nu)
 
+        for i in range(sum_nu.shape[0]):
+            j = i + sum_nu[i]
+            if j in label_id_nonperiodic:
+                label_id.append(i)
+
+        return tuple(label_id)
 
     def kernel_to_nonperiodic(self, kernel):
         '''

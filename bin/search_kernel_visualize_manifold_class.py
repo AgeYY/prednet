@@ -21,20 +21,22 @@ label_path = 'label_' + out_data_head + '_R_prednet' + '.hkl'
 label_name_path = 'label_name_' + out_data_head + '_R_prednet' + '.hkl'
 
 mesh_size = 10
-label_period_id = (1,) # this is id before converting to nonperiodic
-label_id = (1,2) # only fit manifold about these information variables.
 train_ratio = 0.6
 test_ratio = 0.2
 explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
+label_id = (1,) # this is id before converting to nonperiodic
 mesh_bound = [[0, 0.15], [0, 360], [0, 5]]
 var_period = [None, [0, 360], None] # the length is equal to the number of labels (columns of train_label). None means this variable is linear, while given a period interval, von mises function would be used as a kernel
 kernel_width = [0.0016, 60, 1]
-#kernel_width = [0.0016, 0.5, 0.5, 1]
 
 mesh_hp = Mesh_Helper(var_period)
+
 kernel_width = mesh_hp.kernel_to_nonperiodic(kernel_width)
+label_id = mesh_hp.label_id_to_nonperiodic(label_id)
+label_mesh = mesh_hp.generate_manifold_label_mesh(mesh_bound, mesh_size)
+label_mesh = mesh_hp.label_to_nonperiodic(label_mesh)
 
 ### these are for kernel search
 kernel_width_speed_list = np.linspace(0.0005, 0.01, 5).reshape(-1, 1)
@@ -54,9 +56,6 @@ def layer_order_helper():
         n_layer = 5
         layer_order = ['X', 'R0', 'R1', 'R2', 'R3']
     return n_layer, layer_order
-
-label_mesh = mesh_hp.generate_manifold_label_mesh(mesh_bound, mesh_size)
-label_mesh = mesh_hp.label_to_nonperiodic(label_mesh)
 
 dataset = Layer_Dataset(feamap_path, label_path, label_name_path, explained_var_thre=explained_var_thre_pca_all_data, nan_handle='None') # no nan in data, skip nan_handle would be faster
 #dataset.convert_label_to_nonperiodic(var_period)
