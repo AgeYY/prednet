@@ -26,11 +26,11 @@ test_ratio = 0.2
 explained_var_thre = 0.90
 explained_var_thre_pca_all_data = 0.90
 # drifting grating configurations
-label_id = (0, 1)
+label_id = (1,)
 mesh_bound = [[0, 0.15], [0, 360], [0, 5]]
 kernel_mesh_bound = [[0.0005, 0.01], [10, 60], [0.01, 1]]
 var_period = [None, [0, 360], None] # the length is equal to the number of labels (columns of train_label). None means this variable is linear, while given a period interval, von mises function would be used as a kernel
-kernel_width = [0.0016, 30, 1]
+kernel_width = [0.01, 30, 1]
 
 mesh_hp = Mesh_Helper(var_period)
 
