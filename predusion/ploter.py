@@ -271,7 +271,7 @@ def plot_layer_error_bar_helper(score, n_layer, layer_order, ax, error_bar_metho
     ax.plot(np.arange(-1, n_layer - 1), score_mean)
     return ax
 
-def kernel_size_ploter(feamap_train, label_train, feamap_validate, label_validate, geoa, lt_mesh, label_id, kernel_mesh, train_ratio=0.6, test_ratio=0.2):
+def kernel_size_ploter(geoa, mesh_hp, feamap_train, label_train, feamap_validate, label_validate, lt_mesh, label_id, kernel_mesh, train_ratio=0.6, test_ratio=0.2):
     '''
     for fine tuning kernel size, see demo in search_kernel
     dataset: a layer_dataset
@@ -282,17 +282,38 @@ def kernel_size_ploter(feamap_train, label_train, feamap_validate, label_validat
     score = geoa.search_kernel_width(lt_mesh, feamap_validate, label_validate, label_id, kernel_mesh)
     print('scores are:')
     [print(key,':',value) for key, value in score.items()]
-    print('The corresponding kernel sizes are (mapped by row)')
-    print(kernel_mesh[:, label_id])
+    print('The corresponding kernel sizes are (mapped by column)')
+
+    kernel_mesh_origin = mesh_hp.kernel_to_origin(kernel_mesh.T).T # rows are sample points, columns are different label
+    label_id_origin = mesh_hp.label_id_to_origin(label_id)
+
+    n_kernel = kernel_mesh_origin.shape[0]
+    kernel_id = np.arange(n_kernel)
+    print('kernel_id: ', kernel_id)
+    print('kernel_value: \n', kernel_mesh_origin[:, label_id_origin].T)
 
     plt.figure()
     plt.title('r2_score for different kernel size. Size of x and y are same')
     for key, value in score.items():
-        plt.plot(kernel_mesh[:, label_id[0]], value, label=key)
-        plt.scatter(kernel_mesh[:, label_id[0]], value)
+        plt.plot(kernel_id, value, label=key)
+        plt.scatter(kernel_id, value)
     plt.legend()
-    plt.show()
     return score
+
+def layer_manifold_ploter(geoa, n_layer, layer_order, feamap_test, label_test, label_mesh_origin, label_id_origin, label_id):
+    '''
+    plot manifold. See demo in search_kernel_visualize_manifold
+    '''
+
+    for layer_name in layer_order:
+        info_manifold = geoa.ana_group[layer_name][label_id].info_manifold.copy()
+
+        plt_dr = Ploter_dim_reduction(method='pca', n_components=2)
+        for lb_id in label_id_origin:
+            vmin, vmax = label_mesh_origin[:, lb_id].min(), label_mesh_origin[:, lb_id].max()
+            fig, ax =  plt_dr.plot_dimension_reduction(info_manifold, colorinfo=label_mesh_origin[:, lb_id], mode='2D', fit=True, vmin=vmin, vmax=vmax)
+            fig, ax =  plt_dr.plot_dimension_reduction(feamap_test[layer_name], colorinfo=label_test[:, lb_id], mode='2D', fig=fig, ax=ax, marker='+', vmin=vmin, vmax=vmax, title=layer_name) # test
+    return fig, ax
 
 if __name__ == '__main__':
     import os
