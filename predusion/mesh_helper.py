@@ -146,3 +146,18 @@ class Mesh_Helper():
         '''This function is useful in validation. Rows are sample, cols are labels'''
         return self.kernel_to_nonperiodic(kernel_mesh.T).T
 
+
+    def tangent_vec_to_origin(self, vec, label_id_nonperiodic):
+        '''
+        vec (array [n_query, n_label, n_features]): tangent vector at query points, along labels
+        label_id_nonperiodic ([n_label]): label id
+        '''
+        nu = [False if vari is None else True for vari in self.var_period] # binary vector to indicate whether the i th variable is periodic or not
+        label_id_origin = self.label_to_origin(label_id_nonperiodic)
+        i = 0
+        for lid in label_id_origin:
+            if not nu[lid]:
+                vec[:, i, :] = - vec[:, i, :] * np.sin() + vec[:, i, :]
+                i += 1
+            i += 1
+        pass

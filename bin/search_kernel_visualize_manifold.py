@@ -42,17 +42,17 @@ geoa = manifold.Layer_manifold()
 
 kernel_size_ploter(geoa, mesh_hp, feamap_train, label_train, feamap_validate, label_validate, label_mesh, label_id, kernel_mesh)
 
-## visualize testing
-#geoa.load_data(feamap_train, label_train)
-#label_mesh = mesh_hp.generate_manifold_label_mesh(mesh_bound, mesh_size, grid=True)
-#label_mesh = mesh_hp.label_to_nonperiodic(label_mesh)
-#geoa.build_kernel(label_mesh, label_id, kernel_width=kernel_width)
-#geoa.fit_info_manifold_all(label_id)
-#
-### visualize infomation manifold
-#label_test = mesh_hp.label_to_origin(label_test)
-#label_mesh_origin = mesh_hp.label_to_origin(label_mesh)
-#label_id_origin = mesh_hp.label_id_to_origin(label_id)
-#
-#fig, ax = layer_manifold_ploter(geoa, n_layer, layer_order, feamap_test, label_test, label_mesh_origin, label_id_origin, label_id)
+# visualize testing
+geoa.load_data(feamap_train, label_train)
+label_mesh = mesh_hp.generate_manifold_label_mesh(mesh_bound, mesh_size, grid=True)
+label_mesh = mesh_hp.label_to_nonperiodic(label_mesh)
+geoa.build_kernel(label_mesh, label_id, kernel_width=kernel_width)
+geoa.fit_info_manifold_all(label_id)
+
+## visualize infomation manifold
+label_test = mesh_hp.label_to_origin(label_test)
+label_mesh_origin = mesh_hp.label_to_origin(label_mesh)
+label_id_origin = mesh_hp.label_id_to_origin(label_id)
+
+fig, ax = layer_manifold_ploter(geoa, n_layer, layer_order, feamap_test, label_test, label_mesh_origin, label_id_origin, label_id)
 plt.show()
