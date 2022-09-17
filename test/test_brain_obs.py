@@ -30,7 +30,6 @@ pprint.pprint(exps)
 session_id = exps[0]['id'] # only one session has static_gratings, download it directly
 data_set = boc.get_ophys_experiment_data(session_id)
 
-
 ada = ad.Drifting_Gratings_Allen_Analyzer(data_set)
 #
 #dff, stim_epoch = ada.dff_trace()
