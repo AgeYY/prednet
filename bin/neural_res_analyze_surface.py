@@ -13,7 +13,6 @@ from predusion.static_dataset import Layer_Dataset, train_test_validate_split
 from kitti_settings import *
 from search_kernel_visualize_manifold_parameters import *
 
-mesh_size = 50 # number of points on the manifold
 mesh_random = True
 mesh_grid = False
 
@@ -39,7 +38,7 @@ geoa = manifold.Layer_manifold()
 
 ############################ Fix the hyperparameter and repeat on different training testing sets on different random seeds
 train_ratio, test_ratio = 0.7, 0.3
-n_bootstrap = 20
+n_bootstrap = 30
 dim, score, angle = {}, {}, {}
 for i in range(n_bootstrap):
     (feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=None)

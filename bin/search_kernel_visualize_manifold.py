@@ -38,7 +38,7 @@ dataset.label = mesh_hp.label_to_nonperiodic(dataset.label)
 
 geoa = manifold.Layer_manifold()
 
-(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=42)
+(feamap_train, label_train), (feamap_test, label_test), (feamap_validate, label_validate) = train_test_validate_split(dataset, train_ratio, test_ratio, random_seed=0)
 
 kernel_size_ploter(geoa, mesh_hp, feamap_train, label_train, feamap_validate, label_validate, label_mesh, label_id, kernel_mesh)
 
